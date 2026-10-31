@@ -143,6 +143,10 @@
             <option value="sibo_friendly">SIBO Uyumu (Soğan/Sarımsak Azaltılmış)</option>
           </select>
         </div>
+        <div id="allergenWrapper" class="sm:col-span-2">
+          <label for="inputAllergens" class="block text-xs font-semibold text-stone-600 mb-1">Kaçınılacak İçerikler (virgülle ayırın)</label>
+          <input id="inputAllergens" type="text" placeholder="örn: fıstık, süt, yumurta" class="w-full rounded-xl border border-stone-300 px-2.5 py-2 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#1B4D3E]">
+        </div>
       </div>
 
       <!-- Hesaplanan Kişisel Özet Kartları -->
@@ -1543,8 +1547,10 @@
 
       // Profil ve alerjen alanlarını kalıcı olarak sakla
       const allergenInput = document.getElementById("inputAllergens");
-      allergenInput.value = state.allergens || "";
-      allergenInput.addEventListener("input", () => { state.allergens = allergenInput.value; saveState(); renderWeeklyMenu(); });
+      if (allergenInput) {
+        allergenInput.value = state.allergens || "";
+        allergenInput.addEventListener("input", () => { state.allergens = allergenInput.value; saveState(); renderWeeklyMenu(); });
+      }
 
       // Sayısal ve Seçim Girdileri
       ["inputAge", "inputHeight", "inputWeight"].forEach((id) => {
