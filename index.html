@@ -1,153 +1,1749 @@
-<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>BeslenPlus</title>
-<style>
-:root{--bg:#F6F8F4;--c:#fff;--ink:#16231C;--mut:#566860;--ln:#DDE5DF;--g:#2F7D5B;--gt:#fff;--w:#FFF3DC;--r:#B3261E;--rb:#FBE3E0;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101814;--c:#1A2620;--ink:#EAF2ED;--mut:#9DB0A5;--ln:#2C3B33;--g:#5CC08F;--gt:#08150E;--w:#3A2E12;--r:#FF9D94;--rb:#3F1D1A}}
-:root[data-theme="dark"]{--bg:#101814;--c:#1A2620;--ink:#EAF2ED;--mut:#9DB0A5;--ln:#2C3B33;--g:#5CC08F;--gt:#08150E;--w:#3A2E12;--r:#FF9D94;--rb:#3F1D1A}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
-#v{max-width:520px;margin:auto;padding:16px 16px 96px}h1{font-size:22px;margin:0}h2{font-size:17px;margin:0 0 6px}.mu{color:var(--mut)}.s{font-size:12px}
-.c{background:var(--c);border:1px solid var(--ln);border-radius:16px;padding:14px;margin:12px 0}.w{background:var(--w);border-color:#E9A23B}.d{background:var(--rb);border-color:var(--r);color:var(--r)}
-.b{display:block;width:100%;min-height:48px;border:0;border-radius:14px;background:var(--g);color:var(--gt);font:700 15px system-ui;margin:10px 0;cursor:pointer}.b.o{background:none;color:var(--g);border:1.5px solid var(--g)}
-.r{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--ln)}.r:last-child{border:0}
-.ch{display:inline-block;padding:4px 10px;border-radius:99px;background:var(--ln);font:600 12px system-ui;margin:2px 2px 2px 0}
-label{display:block;font-weight:600;font-size:13px;margin:10px 0 4px}input,select{width:100%;min-height:46px;padding:8px 10px;border:1px solid var(--ln);border-radius:10px;background:var(--c);color:var(--ink);font:16px system-ui}
-.k{display:inline-flex;align-items:center;gap:6px;font-weight:400;margin-right:12px;min-height:40px}.k input{width:20px;min-height:20px}
-nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--c);border-top:1px solid var(--ln);padding-bottom:env(safe-area-inset-bottom,0px)}
-nav button{flex:1;min-height:56px;border:0;background:none;color:var(--mut);font:600 12px system-ui;border-top:3px solid transparent}nav button[aria-current="true"]{color:var(--g);border-top-color:var(--g)}
-.n{display:flex;gap:8px;align-items:center;justify-content:space-between}.n .b{width:52px;margin:0;min-height:44px}
-@media print{nav,.b{display:none}}
-</style></head><body><div id="v"></div>
-<nav><button data-a="tab" data-v="bugun">Bugün</button><button data-a="tab" data-v="aile">Aile</button><button data-a="tab" data-v="olcum">Ölçüm</button><button data-a="tab" data-v="tarif">Tarifler</button></nav>
-<script>
-const KEY="bp1",$=s=>document.querySelector(s),V=i=>{const v=document.getElementById(i).value;return["ag","bo","kg","bl","ar","bn","kl"].includes(i)?v.replace(",","."):v};
-let S={m:[],cur:null,tab:"bugun",form:null,cat:"hepsi",n:20,sw:0,bk:null,bm:"",rep:false,cpm:"",rid:null,off:0,err:"",del:null};
-try{const x=localStorage.getItem(KEY);if(x){const p=JSON.parse(x);S.m=p.m||[];S.cur=p.cur}}catch(e){}
-const save=()=>{try{localStorage.setItem(KEY,JSON.stringify({m:S.m,cur:S.cur}))}catch(e){}};
-const E=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const F=n=>n.toFixed(1).replace(".",","),TD=()=>new Date().toISOString().slice(0,10);
-const cur=()=>S.m.find(x=>x.id==S.cur)||S.m[0],last=m=>m.meas[m.meas.length-1];
-const tn=m=>m.type=="preg"?"Hamile":m.type=="lact"?"Emzikli":m.type=="child"?"Çocuk":m.sex=="e"?"Yetişkin erkek":"Yetişkin kadın";
-const bmi=m=>last(m).w/Math.pow(m.h/100,2);
-const bmr=m=>10*last(m).w+6.25*m.h-5*AGE(m)+(m.sex=="e"?5:-161);
-function target(m){
- if(m.type=="child")return{k:Math.round(1000+AGE(m)*80),n:"Çocuklarda kalori kısıtı uygulanmaz; değer yaklaşık büyüme ihtiyacıdır."};
- const t=bmr(m)*m.act;
- if(m.type=="preg")return{k:Math.round(t+[0,0,340,450][m.tri]),n:"Hamilelikte kilo verme planı uygulanmaz; trimestere göre ek enerji eklendi. Doktorunuzla teyit edin."};
- if(m.type=="lact")return{k:Math.round(t+500),n:"Emzirme döneminde kilo verme planı uygulanmaz; +500 kcal ek enerji eklendi. Doktorunuzla teyit edin."};const dz=DZ[m.dz||"yok"];if(dz&&dz.off)return{k:Math.round(t),n:dz.n,off:1};if(AGE(m)>=65&&m.goal=="ver")return{k:Math.round(t),n:"65 yaş üstünde kilo verme planı doktor/diyetisyen kontrolü gerektirir; koruma planı gösteriliyor."};if(m.goal=="ver"){if(bmi(m)<18.5)return{k:Math.round(t),n:"VKİ 18,5’in altında olduğu için kilo verme planı kapalı; koruma planı gösteriliyor."};
-  return{k:Math.round(Math.max(m.sex=="e"?1500:1200,t-500)),n:"Hafif kalori açığı; güvenli hız haftada 0,5-0,8 kg."}}
- return{k:Math.round(m.goal=="al"?t+300:t),n:""}}
-const AL={"yumurta":/yumurta|omlet|menemen/i,"süt":/süt|yoğurt|peynir|ayran|kefir|cacık/i,"gluten":/ekmek|bulgur|yulaf|köfte|galeta|\bun\b|şehriye|tarhana/i,"kuruyemiş":/badem|ceviz|fındık/i,"balık":/somon|levrek|çipura|alabalık|\bton\b|balık/i};
-const AGEd=(m,d)=>m.age+(new Date(d)-new Date(m.start))/31557600000,AGE=m=>Math.floor(AGEd(m,TD()));
-const R=[],CAT={k:"Kahvaltı",c:"Çorba",s:"Salata",z:"Sebze yemeği",a:"Ara öğün",m:"Ana yemek"};
-const add=(c,t,k,p,m,i,s)=>R.push({c,t,k:Math.round(k),p:Math.round(p),m,i,s});
-const EG=[["Haşlanmış Yumurta",155,13,"2 yumurta"],["Sebzeli Omlet",220,14,"2 yumurta, 1 biber, 1 domates, 1 tk yağ"],["Menemen",230,14,"2 yumurta, 1 biber, 2 domates, 1 tk yağ"],["Çılbır",250,16,"2 yumurta, 100 g yoğurt, 1 tk tereyağı"]];
-const SD=[["Tam Buğday Ekmeği",80,"1 dilim tam buğday ekmeği"],["Zeytin ve Salatalık",70,"5 zeytin, 1 salatalık"],["Beyaz Peynir ve Domates",90,"40 g beyaz peynir, 1 domates"],["Yeşillik ve Biber",30,"Yeşillik, 1 biber"],["Çavdar Ekmeği",75,"1 dilim çavdar ekmeği"]];
-EG.forEach(e=>SD.forEach(d=>add("k",e[0]+", "+d[0],e[1]+d[1],e[2]+2,10,[e[3],d[2]],["Malzemeleri hazırlayın.","Yumurtayı iyice pişirin; hamilelerde ve çocuklarda yarı çiğ bırakmayın.","Yanındakilerle servis edin."])));
-[["Muzlu Yulaf Lapası","50 g yulaf, 200 ml süt, ½ muz",320],["Elmalı Tarçınlı Yulaf","50 g yulaf, 200 ml süt, 1 elma, tarçın",310],["Cevizli Yulaf","50 g yulaf, 200 ml süt, 3 ceviz",350],["Meyveli Yulaf","50 g yulaf, 200 ml süt, 1 avuç meyve",300],["Kakaolu Yulaf","50 g yulaf, 200 ml süt, 1 tk şekersiz kakao",300]].forEach(x=>add("k",x[0],x[2],12,10,x[1].split(", "),["Yulafı sütle 5 dk pişirin.","Meyve ve eklemeleri koyup servis edin."]));
-[["Yoğurt, Elma ve Yulaf","200 g yoğurt, 1 elma, 30 g yulaf",280],["Yoğurt, Muz ve Ceviz","200 g yoğurt, ½ muz, 3 ceviz",320],["Yoğurt, Çilek ve Keten","200 g yoğurt, 1 avuç çilek, 1 yk keten tohumu",270],["Yoğurt, Armut ve Badem","200 g yoğurt, 1 armut, 8 badem",300],["Yoğurt, Meyve ve Chia","200 g yoğurt, 1 avuç meyve, 1 yk chia",280]].forEach(x=>add("k",x[0],x[2],15,5,x[1].split(", "),["Yoğurdu kaseye alın.","Meyve ve diğer malzemeleri ekleyip servis edin."]));
-[["Mercimek","1 su bardağı kırmızı mercimek",210],["Ezogelin","½ su bardağı mercimek, 2 yk bulgur, 1 yk pirinç",230],["Sebze","2 havuç, 1 kabak, 1 patates",140],["Domates","4 domates, 1 yk un",150],["Tarhana","3 yemek kaşığı tarhana",160],["Yayla","½ su bardağı pirinç, 1 kase yoğurt",200],["Brokoli","1 küçük brokoli",110],["Kabak","3 kabak",100],["Havuç","4 havuç",120],["Tavuk Suyu","100 g tavuk, 1 havuç, 2 yk şehriye",170],["Mantar","250 g mantar, 1 yk un",130],["Nohut","1 su bardağı haşlanmış nohut",220],["Kereviz","1 kereviz",110],["Pırasa","3 pırasa",100]].forEach(x=>add("c",x[0]+" Çorbası",x[2],8,30,[x[1],"1 soğan","1 tatlı kaşığı yağ","1 l su","Tuz, baharat"],["Soğanı ve sebzeleri 3 dk yağda kavurun.","Ana malzemeyi ve suyu ekleyip 20-25 dk pişirin.","İsterseniz blenderdan geçirip sıcak servis edin."]));
-[["Tavuklu","150 g haşlanmış tavuk",210],["Ton Balıklı","1 küçük kutu ton balığı (süzülmüş)",160],["Nohutlu","4 yk haşlanmış nohut",220],["Mercimekli","4 yk haşlanmış yeşil mercimek",210],["Yumurtalı","2 haşlanmış yumurta",190],["Lorlu","80 g lor peyniri",150],["Bulgurlu","4 yk ince bulgur",230],["Hindili","120 g haşlanmış hindi",190]].forEach(b=>["Marul ve Domates","Roka ve Domates","Ispanak ve Havuç","Kırmızı Lahana ve Havuç","Salatalık ve Maydanoz"].forEach(g=>add("s",b[0]+" "+g+" Salatası",b[2]+60,b[2]>200?18:22,15,[b[1],g.toLowerCase(),"1 tatlı kaşığı zeytinyağı","Limon"],["Yeşillikleri yıkayıp doğrayın.","Ana malzemeyi ekleyin.","Yağ ve limonla karıştırıp servis edin."])));
-[["Zeytinyağlı Taze Fasulye","400 g taze fasulye, 1 soğan, 1 domates",150],["Zeytinyağlı Ispanak","500 g ıspanak, 1 soğan, 2 yk pirinç",140],["Zeytinyağlı Barbunya","1 su bardağı barbunya, 1 soğan, 1 domates",210],["Zeytinyağlı Bamya","400 g bamya, 1 soğan, 1 domates",130],["Zeytinyağlı Pırasa","4 pırasa, 1 havuç, 2 yk pirinç",140],["Zeytinyağlı Kereviz","1 kereviz, 1 havuç, 1 portakal suyu",130],["Zeytinyağlı Bezelye","2 su bardağı bezelye, 1 havuç, dereotu",160],["Zeytinyağlı Börülce","1 su bardağı börülce, 1 soğan, maydanoz",190],["Zeytinyağlı Semizotu","500 g semizotu, 1 soğan, 1 domates",110],["Zeytinyağlı Karnabahar","1 karnabahar, 1 havuç, 1 patates",140],["Zeytinyağlı Kabak","4 kabak, 1 soğan, dereotu",110],["Zeytinyağlı Patlıcan","3 patlıcan, 1 biber, 1 domates",150],["Zeytinyağlı Enginar","3 enginar, 1 havuç, 1 limon",140],["Mantar Sote","300 g mantar, 1 biber, 1 yk yağ",120]].forEach(x=>add("z",x[0],x[2],6,30,[x[1],"1 yemek kaşığı zeytinyağı","Tuz"],["Soğanı yağda kavurun.","Sebzeyi ve domatesi ekleyip az su koyun.","Kısık ateşte yumuşayana kadar pişirin; ılık veya soğuk servis edin."]));
-[["Elma ve Badem","1 elma, 10 çiğ badem",190],["Yoğurt ve Keten Tohumu","150 g yoğurt, 1 yk keten tohumu",130],["Havuç-Salatalık ve Humus","1 havuç, 1 salatalık, 2 yk humus",140],["Portakal ve Ceviz","1 portakal, 6 ceviz yarısı",180],["Armut","1 armut",100],["Haşlanmış Yumurta","1 yumurta",80],["Ayran","1 bardak ayran",70],["Kefir","1 bardak kefir",110],["Mandalina ve Fındık","2 mandalina, 10 fındık",170],["Muz","1 küçük muz",90],["Salatalık ve Beyaz Peynir","1 salatalık, 30 g beyaz peynir",110],["Meyve Tabağı","1 porsiyon mevsim meyvesi",100],["Lor ve Domates","60 g lor, 1 domates",90],["Cacık","1 kase cacık",90],["Çiğ Badem","15 badem",105],["Fırınlanmış Nohut","3 yk nohut, baharat",120],["Havuç","2 havuç",50],["Kivi","2 kivi",90],["Şeftali","1 şeftali",60],["Peynirli Galeta","2 tam buğday galeta, 30 g peynir",120]].forEach(x=>add("a",x[0],x[2],5,5,x[1].split(", "),["Yıkayın, hazırlayın ve servis edin."]));
-const PR={tg:["Tavuk Göğsü",190,38],tb:["Derisiz Tavuk But",210,30],hi:["Hindi Göğsü",170,34],et:["Dana Kuşbaşı",230,32],ko:["Az Yağlı Köfte",250,28],ci:["Çipura",190,34],le:["Levrek",180,32],so:["Somon",290,31],al:["Alabalık",200,30],ne:["Nohut",270,14]};
-const MT={tg:["Izgara","Fırında"],tb:["Fırında","Sote"],hi:["Izgara","Sote"],et:["Güveç","Sote"],ko:["Izgara","Fırında"],ci:["Fırında","Buğulama"],le:["Izgara","Fırında"],so:["Fırında","Izgara"],al:["Fırında","Izgara"],ne:["Sebzeli","Fırında"]};
-const ST={"Izgara":["Malzemeyi baharat ve limonla 15 dk bekletin.","Kızgın ızgarada her yüzü pişene kadar çevirin.","Buğulanmış sebze ve yanındakilerle servis edin."],"Fırında":["Fırını 200 °C’ye ısıtın.","Malzemeyi sebzeyle tepsiye dizip yağ ve baharat ekleyin; 25-30 dk pişirin.","Sıcak servis edin."],"Sote":["Malzemeyi küp doğrayıp yağda mühürleyin.","Sebzeyi ekleyip 10-12 dk pişirin.","Yanındakilerle servis edin."],"Güveç":["Eti küçük doğrayıp yağda mühürleyin.","Sebze ve 1 su bardağı su ekleyip kısık ateşte 40 dk pişirin.","Yanındakilerle servis edin."],"Buğulama":["Balığı sebzeyle tencereye alın.","Limon, yağ ve az su ekleyip kapağı kapalı 15 dk pişirin.","Sıcak servis edin."],"Sebzeli":["Nohutu haşlayın veya süzün.","Sebzeyle yağda 10 dk soteleyin.","Baharatlayıp servis edin."]};
-const VG=[["Brokoli",40],["Kabak",35],["Patlıcan",50],["Biber ve Domates",45],["Ispanak",35],["Karnabahar",40],["Havuç ve Bezelye",70]];
-const SS=[["Bulgur Pilavı",150,"4 yk bulgur pilavı"],["Haşlanmış Patates",90,"1 küçük patates"],["Tam Buğday Ekmeği",80,"1 dilim tam buğday ekmeği"],["Yoğurt",70,"1 kase yoğurt (150 g)"],["Mevsim Salata",30,"Bol mevsim salata"]];
-let q=0;Object.keys(PR).forEach(k=>MT[k].forEach(me=>VG.forEach(v=>{const p=PR[k],sd=SS[q++%5],nm=["Sote","Güveç","Buğulama"].includes(me)?p[0]+" "+me:me+" "+p[0];add("m",nm+" ve "+v[0],p[1]+v[1]+sd[1]+40,p[2],30,["150 g "+p[0].toLowerCase(),"200 g "+v[0].toLowerCase(),"1 tatlı kaşığı zeytinyağı",sd[2],"Tuz, karabiber, limon"],ST[me].concat(["Et ve balığın içi tamamen pişmiş olmalı."]))})));
-R.length=250;
-const DZ={yok:{l:"Yok"},t2:{l:"Tip 2 diyabet",n:"Karbonhidrat toplam enerjinin %45-50’si, lif günde 25-35 g, serbest şeker %5’in altında olmalı. Öğün atlamayın; ilaç veya insülin ayarını doktorunuzla yapın."},ht:{l:"Hipertansiyon (DASH)",n:"Tuz günde 5 g’ın altında (sodyum 2 g altı); potasyumlu sebze-meyve ve az yağlı süt ürünleri artırılır; turşu, konserve, işlenmiş et, fazla peynir ve zeytin kısıtlanır.",ex:/zeytin|peynir|\bton\b/i},ce:{l:"Çölyak (glutensiz)",n:"Ömür boyu sıfır gluten: buğday, arpa, çavdar ve yulaftan kaçının; ortak tost makinesi/tahta gibi çapraz bulaşmaya ve paketli ürün etiketlerine dikkat edin.",ex:/ekmek|bulgur|yulaf|galeta|\bun\b|şehriye|tarhana|buğday|çavdar|köfte/i},gu:{l:"Gut / yüksek ürik asit",n:"Sakatat, hamsi-sardalya, kabuklu deniz ürünleri, bira ve fruktozlu şurup yasak; günde 2,5-3 L su için; hızlı kilo kaybından kaçının (ayda 2-3 kg’ı geçmesin).",ex:/\bton\b/i},kb:{l:"Böbrek yetmezliği (KBY)",off:1,n:"Böbrek yetmezliğinde protein, potasyum ve fosfor hedefleri evreye ve diyalize göre değişir; bu yüzden otomatik plan oluşturulmaz. Nefroloji ekibiniz ve diyetisyeninizle birlikte çalışın."},on:{l:"Kanser tedavisi",off:1,n:"Kanser tedavisinde enerji ve protein ihtiyacı kişiye ve tedaviye göre değişir; bu yüzden otomatik plan oluşturulmaz. Onkoloji ekibiniz ve klinik diyetisyeninizle birlikte çalışın."}};
-const DR={va:["Varfarin",/ıspanak|brokoli|roka|semizotu|maydanoz|lahana|börülce/i,"K vitamini içerir; günlük K vitamini alımınızı sabit tutun, ani artırıp azaltmayın."],me:["Metformin",null,"Uzun süreli kullanımda B12 düzeyini yılda bir kontrol ettirin."],st:["Statin",null,"Greyfurt, greyfurt suyu ve Seville portakalı tüketmeyin."],lv:["Levotiroksin",null,"Sabah aç karnına yalnızca suyla alın; kahvaltı, süt ürünü ve kahve için 30-60 dk, kalsiyum/demir takviyesi için 4 saat bekleyin."],ma:["MAO inhibitörü",null,"Eski peynir, sucuk-salam, bira ve soya sosu gibi tiraminli besinlerden kaçının."],ac:["ACE inhibitörü / ARB",null,"Potasyumlu diyet tuzu ve potasyum takviyesi kullanmayın; yüksek potasyumlu besinleri doktorunuza danışarak tüketin."],di:["Diüretik",null,"Potasyum ve magnezyum kaybı olabilir; kan değerlerinizi doktorunuzla izleyin."],ab:["Tetrasiklin / kinolon",null,"Süt ürünleri ve maden suyunu ilaçtan 2 saat önce veya 4 saat sonra tüketin."]};
-const dwc=(m,r)=>{const n=(m.il||[]).filter(k=>DR[k][1]&&DR[k][1].test(r.i.join(" "))).map(k=>DR[k][2]);return n.length?card("İlaç notu: "+n.join(" "),"w"):""};
-const EDIT=m=>`<div class="mu s" style="margin-top:8px">Sağlık durumu</div><select data-ch="dz" data-id="${m.id}">${Object.keys(DZ).map(k=>`<option value="${k}" ${m.dz==k?"selected":""}>${DZ[k].l}</option>`).join("")}</select><div class="mu s">Kullandığım ilaçlar</div>`+Object.keys(DR).map(k=>`<label class="k"><input type="checkbox" data-ch="il" data-id="${m.id}" value="${k}" ${(m.il||[]).includes(k)?"checked":""}>${DR[k][0]}</label>`).join("")+`<div class="mu s">Alerji / hassasiyet</div>`+Object.keys(AL).map(k=>`<label class="k"><input type="checkbox" data-ch="al" data-id="${m.id}" value="${k}" ${(m.al||[]).includes(k)?"checked":""}>${k}</label>`).join("");
-const bar=m=>S.m.length>1&&!S.form&&!S.rep&&m?`<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:8px">`+S.m.map(x=>`<button class="ch" data-a="sw" data-v="${x.id}" style="border:0;min-height:40px;cursor:pointer;white-space:nowrap;${x.id==m.id?"background:var(--g);color:var(--gt)":"color:var(--ink)"}">${E(x.name)}</button>`).join("")+`</div>`:"";
-const bk=()=>card(`<h2>Yedek</h2><div class="mu s">Verileriniz yalnızca bu telefonda saklanır. Yedeği oluşturup kopyalayın ve bir yere kaydedin; gerektiğinde buraya yapıştırıp yükleyin.</div><textarea id="bk" rows="4" style="width:100%;margin-top:8px;border:1px solid var(--ln);border-radius:10px;background:var(--c);color:var(--ink);font:12px monospace;padding:8px">${E(S.bk||"")}</textarea>${S.bm?`<div class="mu s">${S.bm}</div>`:""}`+btn("exp","Yedeği oluştur")+btn("imp","Yedeği yükle",null,1));
-const comp=m=>{if(m.type!="adult")return"";let o="";const a=[...m.meas].reverse().find(x=>x.waist);
- if(a){const r=a.waist/m.h;o+=row("Bel/boy oranı",r.toFixed(2).replace(".",",")+(r>=.5?" (artmış risk)":" (iyi)"))}
- const b=[...m.meas].reverse().find(x=>x.waist&&x.neck&&(m.sex=="e"||x.hip));
- if(b){const d=m.sex=="e"?b.waist-b.neck:b.waist+b.hip-b.neck;if(d>0){const bf=m.sex=="e"?495/(1.0324-.19077*Math.log10(d)+.15456*Math.log10(m.h))-450:495/(1.29579-.35004*Math.log10(d)+.221*Math.log10(m.h))-450;if(bf>3&&bf<60)o+=row("Tahmini vücut yağı","≈%"+F(bf))+`<div class="mu s">Bel, boyun${m.sex=="e"?"":" ve kalça"} ölçümüne dayalı kaba bir tahmindir.</div>`}}
- return o};
-function repTxt(m){const t=target(m),l=last(m),n0=Math.floor((Date.now()-new Date(m.start))/864e5);
- let s=`BeslenPlus özeti – ${m.name}\nTarih: ${TD()}\n${tn(m)}, ${AGE(m)} yaş, boy ${m.h} cm, kilo ${F(l.w)} kg, VKİ ${F(bmi(m))}\nSağlık durumu: ${DZ[m.dz||"yok"].l}\nİlaçlar: ${(m.il||[]).map(k=>DR[k][0]).join(", ")||"-"}\nAlerji: ${(m.al||[]).join(", ")||"-"}\n`;
- s+=t.off?`Plan: ${t.n}\n`:`Enerji hedefi: ${t.k} kcal/gün${t.n?" ("+t.n+")":""}\n`;
- s+="\nÖlçümler (son 8):\n"+m.meas.slice(-8).map(x=>`${x.d}: ${F(x.w)} kg`+[["bel",x.waist],["kol",x.arm],["kalça",x.hip],["boyun",x.neck]].filter(y=>y[1]).map(y=>`, ${y[0]} ${y[1]} cm`).join("")).join("\n");
- if(!t.off){s+="\n\n7 günlük örnek plan:";for(let i=0;i<7;i++){const dn=(((n0+i)%365)+365)%365+1,o=dn%2,g=(c,st,of)=>{const j=rp(m,c,dn,st,of);return j<0?"-":R[j].t};
-  s+=`\n${i+1}. gün – Kahvaltı: ${g("k",7,0)}; Ara: ${g("a",7,1)}; Öğle: ${o?g("c",5,1)+" + "+g("s",7,2):g("m",5,0)}; Akşam: ${o?g("m",5,3):g("c",5,2)+" + "+g("z",5,3)}`}}
- return s+"\n\nBu özet genel bilgilendirmedir; doktor veya diyetisyen değerlendirmesinin yerini tutmaz."}
-const repV=m=>btn("repx","‹ Geri",null,1)+card(`<pre style="white-space:pre-wrap;word-break:break-word;font:13px/1.5 system-ui;margin:0">${E(repTxt(m))}</pre>`)+(S.cpm?`<div class="mu s">${S.cpm}</div>`:"")+btn("cp","Metni kopyala")+btn("pr","Yazdır / PDF",null,1);
-function extra(m,t){const w=last(m).w,a=AGE(m),ty=m.type,dz=DZ[m.dz||"yok"],pr=ty=="child"?(a<4?[1.05,1.1]:a<14?[.95,.95]:[.85,.9]):ty=="preg"?[1.1,1.1]:ty=="lact"?[1.3,1.3]:a>=65?[1,1.2]:[.8,1];
- let su=Math.max(w*30,t.k)+(ty=="lact"?1000:0);if(m.dz=="gu")su=Math.max(su,2500);
- let o=card(row("Protein hedefi",Math.round(pr[0]*w)+"-"+Math.round(pr[1]*w)+" g")+row("Su hedefi",F(su/1000)+" L")+(m.dz=="t2"?row("Karbonhidrat hedefi","≈"+Math.round(t.k*.48/4)+" g"):""));
- if(S.off==0){const dr=(m.su||{})[TD()]||0;o+=card(`<div class="n"><b>Bugün su</b><span>${F(dr/1000)} / ${F(su/1000)} L</span></div><div style="height:8px;background:var(--ln);border-radius:4px;margin:8px 0"><div style="height:8px;width:${Math.min(100,dr/su*100)}%;background:var(--g);border-radius:4px"></div></div><div style="display:flex;gap:8px"><button class="b o" data-a="su" data-v="250">+250 ml</button><button class="b o" data-a="su" data-v="500">+500 ml</button><button class="b o" data-a="su" data-v="0">Sıfırla</button></div>`)}if(m.dz&&m.dz!="yok")o+=card(`<b>${dz.l}</b><br><span class="mu">${dz.n}</span>`,"w");
- const dn=(m.il||[]).map(k=>DR[k][2]);if(dn.length)o+=card(`<h2>İlaç-besin uyarıları</h2>`+dn.map(x=>`<div style="padding:3px 0">• ${x}</div>`).join("")+`<div class="mu s">İlacınızı kendiniz değiştirmeyin; sorularınız için doktor veya eczacınıza danışın.</div>`,"w");
- if(ty=="preg")o+=card(`<b>Gebelik notları</b><br><span class="mu">Folat 400-600 mcg, demir (2. ve 3. trimesterde ek 27 mg’a kadar), DHA 200-300 mg ve iyot gereksinimi için takviyeleri doktorunuzla belirleyin. Çiğ süt/peynir, az pişmiş et ve cıva içeren büyük balıklardan kaçının.</span>`);
- if(ty=="lact")o+=card(`<b>Emzirme notları</b><br><span class="mu">Ek enerji +500 kcal ve ek 1 L sıvı hedeflendi. Alkolden kaçının; kafeini sınırlı tutun; takviyeleri doktorunuzla belirleyin.</span>`);
- if(a>=65&&ty=="adult")o+=card(`<b>65 yaş üstü notları</b><br><span class="mu">Her ana öğünde 25-30 g protein hedefleyin; susama hissi azaldığı için gün boyu su için. D vitamini ve B12 düzeylerini doktorunuzla izleyin; yutma güçlüğü varsa diyetisyene danışın.</span>`);
- if(ty!="child"){const tk=t.k,cp=m.dz=="t2"?48:50,tc=tk*cp/400,tp=tk*.2/4,tf=tk*(80-cp)/900,ml=tk>2200?3:2,fr=tk<1400?2:tk>2200?4:3,vg=tk<1400?2:tk>2200?4:3,br=Math.max(2,Math.round((tc-ml*9-fr*15-vg*6)/15*2)/2),mt=Math.max(2,Math.round((tp-ml*6-vg*2-br*2)/6*2)/2),fa=Math.max(1,Math.round((tf-ml*6-mt*5)/5*2)/2);
-  o+=card(`<h2>Günlük değişim dağılımı</h2>`+row("Süt/yoğurt",ml)+row("Et/tavuk/balık/yumurta",mt)+row(m.dz=="ce"?"Ekmek/tahıl (glutensiz)":"Ekmek/tahıl/baklagil",br)+row("Sebze",vg)+row("Meyve",fr)+row("Yağ",fa)+`<div class="mu s">1 değişim: süt 200 ml, et 30 g pişmiş, ekmek 25 g (15 g karbonhidrat), yağ 5 g. Yaklaşık değerlerdir.</div>`)}
- return o}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BeslenPlus Pro | Kişisel Öğün ve Beslenme Planlayıcı</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Serif:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #F6F7F4;
+      color: #1C2824;
+    }
+    .font-serif-title {
+      font-family: 'Noto Serif', Georgia, serif;
+    }
+    @media print {
+      .no-print { display: none !important; }
+      body { background: #fff; }
+      .print-shadow-none { box-shadow: none !important; border: 1px solid #d1d5db !important; }
+      @page { size: A4; margin: 12mm; }
+      main { max-width: 100% !important; padding: 0 !important; }
+      body { font-size: 10pt; }
+      .print-only { display: block !important; }
+      body.print-shopping main > section:first-child, body.print-portions main > section:first-child, body.print-rules main > section:first-child { display:none !important; }
+      #tabContent-menu, #tabContent-portions, #tabContent-shopping, #tabContent-rules { display: none !important; }
+      body.print-menu #tabContent-menu, body.print-portions #tabContent-portions, body.print-shopping #tabContent-shopping, body.print-rules #tabContent-rules { display: block !important; }
+      body.print-shopping #shoppingCategoriesContainer { display: block !important; }
+      body.print-shopping #shoppingCategoriesContainer > div { break-inside: avoid; margin-bottom: 8px; }
+    }
+    .print-only { display:none; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
 
-const CI={};R.forEach((r,i)=>(CI[r.c]=CI[r.c]||[]).push(i));
-const rp=(m,c,n,st,of)=>{const f=CI[c].filter(i=>!bad(m,R[i].t+" "+R[i].i.join(" ")).length);return f.length?f[(n*st+of)%f.length]:-1};
-const LMS={e:[[-2.0112,16.575,.08059],[-1.42,16.0003,.07263],[-1.7149,15.6282,.07189],[-2.6152,15.4191,.07599],[-3.2117,15.3835,.08305],[-3.3232,15.5129,.09213],[-3.1831,15.7823,.10209],[-2.9711,16.1671,.11172],[-2.7656,16.6461,.12011],[-2.5906,17.2009,.12673],[-2.4474,17.8146,.13139],[-2.3295,18.4718,.13414],[-2.2274,19.1576,.13525],[-2.1323,19.8577,.13511],[-2.039,20.5576,.1342],[-1.9491,21.2425,.13306],[-1.8747,21.8959,.13229]],
-k:[[-.9866,16.4234,.08545],[-2.0968,15.6992,.07861],[-3.0185,15.2985,.07871],[-3.3501,15.1519,.0843],[-3.2256,15.2169,.0938],[-2.9262,15.4536,.10533],[-2.6172,15.827,.11716],[-2.3609,16.3061,.12801],[-2.1713,16.8623,.13706],[-2.0452,17.4691,.14387],[-1.9755,18.1015,.14836],[-1.955,18.7364,.15071],[-1.9771,19.3526,.15126],[-2.0349,19.9306,.15051],[-2.1192,20.4533,.14909],[-2.2157,20.9058,.14772],[-2.3037,21.2753,.14727]]};
-const lms=(sx,a)=>{const i=Math.min(15,Math.floor(a-2)),f=a-2-i,x=LMS[sx][i],y=LMS[sx][i+1];return x.map((v,j)=>v+(y[j]-v)*f)};
-const cdf=z=>{const t=1/(1+.2316419*Math.abs(z)),p=.3989423*Math.exp(-z*z/2)*t*(.3193815+t*(-.3565638+t*(1.781478+t*(-1.821256+t*1.330274))));return z>0?1-p:p};
-function pers(m){const a=last(m),ag=Math.min(18,Math.max(2,AGEd(m,a.d))),[L,M,S_]=lms(m.sex,ag),bm=x=>x.w/Math.pow((x.h||m.h)/100,2),z=(Math.pow(bm(a)/M,L)-1)/(L*S_),pc=cdf(z)*100,
- lb=pc<5?"Düşük kilolu aralığı (5. persentilin altı)":pc<85?"Sağlıklı aralık":pc<95?"Fazla kilolu aralığı (85-95. persentil)":"Obezite aralığı (95. persentil ve üzeri)",
- X=g=>20+(Math.min(18,Math.max(2,g))-2)*300/16,Y=v=>150-(Math.min(32,Math.max(12,v))-12)*7,
- cv=[[-1.645,"4 3","5"],[0,"","50"],[1.036,"1 3","85"],[1.645,"4 3","95"]].map(c=>`<polyline points="${LMS[m.sex].map((l,i)=>X(i+2)+","+Y(l[1]*Math.pow(1+l[0]*l[2]*c[0],1/l[0]))).join(" ")}" fill="none" stroke="var(--mut)" stroke-width="1.5" stroke-dasharray="${c[1]}"/><text x="322" y="${Y(LMS[m.sex][16][1]*Math.pow(1+LMS[m.sex][16][0]*LMS[m.sex][16][2]*c[0],1/LMS[m.sex][16][0]))+3}" font-size="9" fill="var(--mut)">${c[2]}</text>`).join(""),
- pt=m.meas.map(x=>[X(AGEd(m,x.d)),Y(bm(x))]);
- return card(`<h2>Büyüme takibi (VKİ-yaş)</h2><div style="font:700 24px system-ui">${F(pc)}. persentil</div><div>${lb}</div><div style="display:flex;gap:8px;margin:8px 0"><button class="ch" data-a="sex" data-v="k" style="border:0;min-height:36px;cursor:pointer;${m.sex=="k"?"background:var(--g);color:var(--gt)":"color:var(--ink)"}">Kız</button><button class="ch" data-a="sex" data-v="e" style="border:0;min-height:36px;cursor:pointer;${m.sex=="e"?"background:var(--g);color:var(--gt)":"color:var(--ink)"}">Erkek</button></div><svg viewBox="0 0 345 170" width="100%" role="img" aria-label="VKİ persentil eğrileri">${cv}<polyline points="${pt.map(p=>p.join(",")).join(" ")}" fill="none" stroke="var(--g)" stroke-width="2"/>${pt.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="var(--g)"/>`).join("")}<text x="20" y="165" font-size="9" fill="var(--mut)">2 yaş</text><text x="290" y="165" font-size="9" fill="var(--mut)">18 yaş</text></svg><div class="mu s">Eğriler: 5., 50., 85., 95. persentil (CDC 2000 referansı). Bu bir tarama sonucudur, tanı değildir; değerlendirme için çocuk doktoruna danışın. Boyu ölçüm eklerken güncelleyin.</div>`,pc<5||pc>=85?"w":"")}
-const bad=(m,x)=>(m.al||[]).filter(a=>AL[a].test(x)).concat((DZ[m.dz]||{}).ex&&DZ[m.dz].ex.test(x)?[DZ[m.dz].l]:[]).concat(m.type=="preg"&&/\bton\b/i.test(x)?["hamilelikte sınırlı (ton)"]:[]);
-const pick=(m,pool,n,st,of)=>{const f=pool.filter(x=>!bad(m,x).length);return f.length?f[(n*st+of)%f.length]:"Uygun öğün bulunamadı; diyetisyene danışın."};
-function warn(m){const a=m.meas;if(a.length<2)return"";const x=a[a.length-1],y=a[a.length-2],d=Math.max(1,(new Date(x.d)-new Date(y.d))/864e5),l=y.w-x.w;
- if(m.type=="preg"&&l>=1)return"Hamilelikte kilo kaybı görüldü; lütfen doktorunuza danışın.";
- if(m.type=="child"&&l/y.w>.05)return"Çocukta belirgin kilo kaybı var; çocuk doktoruna danışın.";
- if(m.type=="adult"&&l/d*7>1)return"Haftalık kayıp hızı 1 kg’ı aşıyor (≈"+F(l/d*7)+" kg). Planı gevşetin veya uzmana danışın.";return""}
-const btn=(a,t,v,o)=>`<button class="b ${o?"o":""}" data-a="${a}" ${v!=null?`data-v="${v}"`:""}>${t}</button>`;
-const card=(h,c)=>`<div class="c ${c||""}">${h}</div>`;
-const row=(a,b)=>`<div class="r"><span>${a}</span><b>${b}</b></div>`;
-function bugun(m){
- const t=target(m),d=new Date(Date.now()+S.off*864e5),n=Math.floor((Date.now()-new Date(m.start))/864e5)+S.off,dn=((n%365)+365)%365+1,o=dn%2,pg=m.type=="preg",ch=m.type=="child";
- const sh=pg?[.22,.1,.28,.1,.22,.08]:ch?[.22,.12,.28,.12,.26]:[.25,.1,.3,.1,.25];
- const sl=[["Kahvaltı",[["k",7,0]]],["Ara öğün",[["a",7,1]]],["Öğle",o?[["c",5,1],["s",7,2]]:[["m",5,0]]],["Ara öğün",[["a",7,4]]],["Akşam",o?[["m",5,3]]:[["c",5,2],["z",5,3]]]];
- if(pg)sl.push(["Gece ara öğünü",[["a",7,9]]]);
- const tpl=m.type=="lact"?"Emzirme şablonu":pg?m.tri+". trimester şablonu":ch?"Çocuk büyüme şablonu":{ver:"Kilo verme şablonu",koru:"Koruma şablonu",al:"Kilo alma şablonu"}[m.goal];
- let h=`<div class="n"><button class="b o" data-a="off" data-v="-1" aria-label="Önceki gün">‹</button><div style="text-align:center"><h1>${d.toLocaleDateString("tr-TR",{day:"numeric",month:"long"})}</h1><div class="mu s">${E(m.name)} · plan günü ${dn}/365</div></div><button class="b o" data-a="off" data-v="1" aria-label="Sonraki gün">›</button></div>`;
- if(t.off)return h+card(E(DZ[m.dz].n),"w");h+=card(`<div class="mu s">Günlük hedef · ${tpl}</div><div style="font:700 30px system-ui">${t.k} kcal</div>${t.n?`<div class="mu s">${t.n}</div>`:""}`);
- h+=extra(m,t)+card(`<h2>Günün önerisi</h2>`+sl.map((s,i)=>{const ids=s[1].map(x=>rp(m,x[0],dn+S.sw*11,x[1],x[2])).filter(j=>j>=0);if(!ids.length)return row(`<b>${s[0]}</b><br><span class="mu s">Uygun öğün bulunamadı; diyetisyene danışın.</span>`,"-");const sum=ids.reduce((a,j)=>a+R[j].k,0),f=Math.min(1.8,Math.max(ch?.3:.6,Math.round(t.k*sh[i]/sum*10)/10));return row(`<b>${s[0]}</b>`+ids.map(j=>`<br><button data-a="rec" data-v="${j}" style="border:0;background:none;color:var(--g);font:inherit;text-align:left;padding:2px 0;min-height:32px;cursor:pointer;text-decoration:underline">${E(R[j].t)}</button>`).join(""),`×${F(f)}<br>${Math.round(sum*f/10)*10} kcal`)}).join(""));
- return h+btn("swap","Günün menüsünü değiştir",null,1)+`<div class="mu s">Çarpan, tarifteki porsiyonun hedef kaloriye göre büyütülmesini veya küçültülmesini gösterir; değerler yaklaşıktır.</div>`}
-function aile(){return `<h1>Aile</h1>`+S.m.map(m=>card(`<div class="n"><b>${E(m.name)}</b><span class="ch">${tn(m)}</span></div><div class="mu s">${AGE(m)} yaş · ${m.h} cm · ${F(last(m).w)} kg · ${target(m).k} kcal</div>`+EDIT(m)+btn("pick","Bu profile geç",m.id,1)+(S.del==m.id?btn("delok","Silmeyi onayla",m.id):`<button class="b o" data-a="del" data-v="${m.id}" style="color:var(--r);border-color:var(--r)">Profili sil</button>`),m.id==cur().id?"w":"")).join("")+btn("add","Aile üyesi ekle")+bk()}
-function olcum(m){
- const a=m.meas,w=a.map(x=>x.w),mn=Math.min(...w)-1,mx=Math.max(...w)+1,pt=w.map((v,i)=>[20+(a.length>1?i*300/(a.length-1):150),100-(v-mn)/(mx-mn)*90]),wr=warn(m),b=bmi(m);
- return `<h1>${E(m.name)} · ölçümler</h1>`+(wr?card(wr,"d"):"")+card(`<div style="font:700 28px system-ui">${F(last(m).w)} kg</div><div class="mu s">Başlangıç ${F(a[0].w)} kg · ${a.length} kayıt</div><svg viewBox="0 0 340 110" width="100%" height="130" role="img" aria-label="Kilo grafiği"><polyline points="${pt.map(p=>p.join(",")).join(" ")}" fill="none" stroke="var(--g)" stroke-width="3"/>${pt.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="var(--g)"/>`).join("")}</svg>`)+card(row("VKİ",F(b))+row("Bel",last(m).waist?last(m).waist+" cm":"-")+row("Kol",last(m).arm?last(m).arm+" cm":"-")+comp(m)+(m.type=="child"?pers(m):""))+card(`<h2>Geçmiş</h2>`+a.slice(-6).reverse().map(x=>row(x.d,F(x.w)+" kg")).join(""))+btn("meas","Ölçüm ekle")+btn("rep","Diyetisyen raporu hazırla",null,1)}
-function tarif(m){
- if(S.rid!=null){const r=R[S.rid],bb=bad(m,r.t+" "+r.i.join(" "));return btn("back","‹ Tariflere dön",null,1)+`<h1>${E(r.t)}</h1><div class="mu s">${CAT[r.c]} · ${r.k} kcal · yaklaşık ${r.p} g protein · ${r.m} dk</div>`+(bb.length?card("Bu tarif profiliniz için uygun olmayabilir: "+bb.join(", "),"d"):"")+dwc(m,r)+card(`<h2>Malzemeler</h2>`+r.i.map(x=>`<div>• ${E(x)}</div>`).join(""))+card(`<h2>Hazırlanış</h2>`+r.s.map((x,i)=>`<div>${i+1}. ${E(x)}</div>`).join(""))}
- const idx=R.map((r,i)=>i).filter(i=>S.cat=="hepsi"||R[i].c==S.cat);
- return `<h1>Tarifler</h1><div class="mu s">${idx.length} tarif</div><div style="margin:8px 0">`+Object.entries({hepsi:"Tümü",...CAT}).map(([k,v])=>`<button class="ch" data-a="cat" data-v="${k}" style="border:0;cursor:pointer;min-height:36px;${S.cat==k?"background:var(--g);color:var(--gt)":"color:var(--ink)"}">${v}</button>`).join("")+`</div>`+idx.slice(0,S.n).map(i=>{const r=R[i],bb=bad(m,r.t+" "+r.i.join(" "));return `<button class="c" data-a="rec" data-v="${i}" style="width:100%;text-align:left;color:inherit;font:inherit;cursor:pointer;margin:8px 0;${bb.length?"opacity:.55":""}"><b>${E(r.t)}</b><br><span class="mu s">${r.k} kcal · ${r.m} dk</span>${bb.length?`<br><span class="s" style="color:var(--r)">Uygun değil: ${bb.join(", ")}</span>`:""}</button>`}).join("")+(idx.length>S.n?btn("more","Daha fazla göster",null,1):"")}
-const fl=(i,l,t,v)=>`<label for="${i}">${l}</label><input id="${i}" type="${t=="number"?"text":t}" value="${v||""}" inputmode="${t=="number"?"decimal":"text"}" step="any">`;
-const sel=(i,l,o)=>`<label for="${i}">${l}</label><select id="${i}">${o.map(x=>`<option value="${x[0]}">${x[1]}</option>`).join("")}</select>`;
-function form(){const er=S.err?card(S.err,"d"):"";
- if(S.form=="meas")return `<h1>Ölçüm ekle</h1>${er}${fl("kg","Kilo (kg)","number")}${fl("bo","Boy (cm, isteğe bağlı)","number")}${fl("bl","Bel (cm, isteğe bağlı)","number")}${fl("ar","Kol (cm, isteğe bağlı)","number")}${fl("bn","Boyun (cm, isteğe bağlı)","number")}${fl("kl","Kalça (cm, isteğe bağlı)","number")}${btn("saveMeas","Kaydet")}${btn("cancel","Vazgeç",null,1)}`;
- return `<h1>Yeni profil</h1>${er}${fl("nm","İsim","text")}${sel("ty","Profil tipi",[["ye","Yetişkin erkek"],["yk","Yetişkin kadın"],["hm","Hamile"],["em","Emzikli anne"],["ck","Çocuk (2-17 yaş)"]])}${fl("ag","Yaş","number")}${sel("sx","Cinsiyet (çocuk için)",[["k","Kız"],["e","Erkek"]])}${fl("bo","Boy (cm)","number")}${fl("kg","Kilo (kg)","number")}${sel("ac","Hareket düzeyi",[[1.2,"Az hareketli"],[1.375,"Orta"],[1.55,"Çok hareketli"]])}${sel("go","Hedef (yetişkinler)",[["ver","Kilo vermek"],["koru","Korumak"],["al","Kilo almak"]])}${sel("tr","Trimester (hamileler)",[[1,"1. trimester"],[2,"2. trimester"],[3,"3. trimester"]])}<label>Alerji / hassasiyet</label>${Object.keys(AL).map(a=>`<label class="k"><input type="checkbox" name="al" value="${a}">${a}</label>`).join("")}${btn("saveM","Kaydet")}${S.m.length?btn("cancel","Vazgeç",null,1):""}`}
-function R_(){const m=cur();let h;
- if(S.rep&&m)h=repV(m);else if(S.form)h=form();else if(!m)h=card(`<h2>BeslenPlus’a hoş geldiniz</h2><p class="mu">Önce kendiniz için bir profil oluşturun; aile üyelerini sonra ekleyebilirsiniz.</p>`)+btn("add","Profil oluştur");
- else h=S.tab=="bugun"?bugun(m):S.tab=="aile"?aile():S.tab=="olcum"?olcum(m):tarif(m);
- $("#v").innerHTML=bar(m)+h+`<p class="mu s">Genel bilgilendirme amaçlıdır; doktor veya diyetisyen önerisinin yerini tutmaz.</p>`;
- document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-current",String(b.dataset.v==S.tab&&!S.form)))}
-document.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a,v=b.dataset.v;S.err="";
- if(a=="tab"){S.tab=v;S.form=null;S.rid=null;S.del=null;S.rep=false;S.cpm=""}
- else if(a=="off"){S.off+=+v;S.sw=0}else if(a=="add"){S.form="m"}else if(a=="meas")S.form="meas";else if(a=="cancel")S.form=null;
- else if(a=="rec"){S.rid=+v;S.tab="tarif"}else if(a=="back")S.rid=null;else if(a=="cat"){S.cat=v;S.n=20}else if(a=="more")S.n+=20;else if(a=="sex"){cur().sex=v;save()}else if(a=="sw"){S.cur=+v;S.off=0;S.sw=0;S.rid=null;S.del=null;save()}else if(a=="swap")S.sw++;else if(a=="su"){const m=cur();m.su=m.su||{};m.su[TD()]=v=="0"?0:(m.su[TD()]||0)+ +v;save()}else if(a=="rep"){S.rep=true;S.cpm=""}else if(a=="repx")S.rep=false;else if(a=="pr"){try{window.print()}catch(x){}}else if(a=="cp"){S.cpm="";try{navigator.clipboard.writeText(repTxt(cur())).then(()=>{S.cpm="Kopyalandı.";R_()},()=>{S.cpm="Kopyalanamadı; metni seçip kopyalayın.";R_()})}catch(x){S.cpm="Kopyalanamadı; metni seçip kopyalayın."}}else if(a=="exp"){S.bk=JSON.stringify({m:S.m,cur:S.cur});S.bm="Yedek oluşturuldu; metni seçip kopyalayın."}else if(a=="imp"){try{const p=JSON.parse(V("bk"));if(!Array.isArray(p.m)||!p.m.length||!p.m.every(x=>x&&x.name&&x.h&&x.meas&&x.meas.length))throw 0;S.m=p.m;S.cur=p.cur||p.m[0].id;S.bk=null;S.bm="Yedek yüklendi.";save()}catch(x){S.bm="Yedek okunamadı; metni eksiksiz yapıştırın."}}else if(a=="pick"){S.cur=+v;S.tab="bugun";S.off=0;save()}
- else if(a=="del")S.del=+v;else if(a=="delok"){S.m=S.m.filter(x=>x.id!=+v);S.cur=S.m.length?S.m[0].id:null;S.del=null;save()}
- else if(a=="saveMeas"){const w=+V("kg");if(!(w>=10&&w<=300))S.err="Kiloyu kontrol edin.";else{const hh=+V("bo");if(hh>=80&&hh<=230)cur().h=hh;cur().meas.push({d:TD(),w,h:cur().h,waist:+V("bl")||null,arm:+V("ar")||null,neck:+V("bn")||null,hip:+V("kl")||null});S.form=null;save()}}
- else if(a=="saveM"){const t=V("ty"),age=+V("ag"),h=+V("bo"),w=+V("kg");let er="";
-  if(!V("nm").trim())er="İsim girin.";else if(!(h>=80&&h<=230)||!(w>=10&&w<=300))er="Boy (cm) ve kilo (kg) değerlerini kontrol edin.";
-  else if(t=="ck"&&!(age>=2&&age<=17))er="Çocuk modülü 2-17 yaş içindir; 2 yaş altı için çocuk doktoruna danışın.";
-  else if((t=="ye"||t=="yk")&&!(age>=18&&age<=90))er="Yetişkin profili için yaş 18-90 olmalı.";
-  else if((t=="hm"||t=="em")&&!(age>=15&&age<=50))er="Hamile profili için yaş 15-50 olmalı.";
-  if(er)S.err=er;else{const m={id:Date.now(),name:V("nm").trim(),type:t=="hm"?"preg":t=="em"?"lact":t=="ck"?"child":"adult",sex:t=="ye"?"e":t=="ck"?V("sx"):"k",age,h,act:+V("ac"),goal:V("go"),tri:+V("tr"),al:[...document.querySelectorAll("[name=al]:checked")].map(x=>x.value),meas:[{d:TD(),w,h,waist:null,arm:null}],start:TD()};S.m.push(m);S.cur=m.id;S.form=null;S.tab="bugun";save()}}
- R_();window.scrollTo(0,0)});
-document.addEventListener("change",e=>{const t=e.target,c=t.dataset&&t.dataset.ch;if(!c)return;const m=S.m.find(x=>x.id==t.dataset.id);if(!m)return;if(c=="dz")m.dz=t.value;else{m[c]=(m[c]||[]).filter(x=>x!=t.value);if(t.checked)m[c].push(t.value)}save();R_()});
-R_();
-</script></body></html>
+  <!-- Üst Başlık (Header) -->
+  <header class="bg-[#1B4D3E] text-white shadow-md no-print">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-2.5">
+          <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-emerald-700/70 text-emerald-100 font-bold text-lg">🌿</span>
+          <h1 class="font-serif-title text-xl sm:text-2xl font-bold tracking-tight">BeslenPlus Pro</h1>
+        </div>
+        <p class="text-emerald-100/90 text-xs sm:text-sm mt-1">Kişisel öğün planlama • tarifler • alışveriş • günlük takip</p>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <button id="btnPrintPlan" type="button" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-800 hover:bg-emerald-700 text-xs sm:text-sm font-medium transition">
+          <span>🖨️</span><span>PDF / Yazdır</span>
+        </button>
+        <button id="btnExportData" type="button" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-xs sm:text-sm font-medium transition">⬇️ Yedekle (JSON)</button>
+        <button id="btnImportData" type="button" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-xs sm:text-sm font-medium transition">⬆️ Yedeği Yükle</button>
+        <input id="importDataFile" type="file" accept="application/json,.json" class="hidden">
+        <button id="btnResetProgress" type="button" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-xs sm:text-sm font-medium transition">
+          <span>🔄</span><span>Takibi Sıfırla</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Ana İçerik Alanı -->
+  <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 flex-1 space-y-6">
+    <section class="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+      <strong>Önemli sağlık notu:</strong> Bu uygulama tanı veya tedavi aracı değildir. “Candida temizliği” ya da “sızdıran bağırsak onarımı” için kanıtlanmış tedavi iddiasında bulunmaz. Kalori ve makro değerleri mevcut tarif verileri nedeniyle tahminidir; çocuklar, hamileler, emzirenler ve hastalığı olan kişiler planı hekim/diyetisyen değerlendirmesi olmadan uygulamamalıdır.
+    </section>
+
+    <!-- BÖLÜM 1: KİŞİ PROFİLİ VE PORSİYON HESAPLAMA PANELİ -->
+    <section class="bg-white rounded-2xl shadow-sm border border-stone-200/80 p-5 sm:p-6 print-shadow-none">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-4 border-b border-stone-100">
+        <div>
+          <h2 class="text-base sm:text-lg font-bold text-[#1B4D3E] flex items-center gap-2">
+            <span>👤</span><span>1. Kişi Profili ve Porsiyon Hesaplayıcı</span>
+          </h2>
+          <p class="text-xs sm:text-sm text-stone-600 mt-0.5">Profilinizi seçin veya ölçümlerinizi girin; tüm öğünlerin gramaj, kaşık ve adet porsiyonları otomatik uyarlansın.</p>
+        </div>
+
+        <!-- Hızlı Profil Seçici Butonlar -->
+        <div class="flex flex-wrap gap-2" id="profileCategoryButtons">
+          <button type="button" data-profile="female" class="profile-preset-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold border transition flex items-center gap-1.5 bg-[#1B4D3E] text-white border-[#1B4D3E]">
+            <span>👩</span><span>Yetişkin Kadın</span>
+          </button>
+          <button type="button" data-profile="male" class="profile-preset-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold border transition flex items-center gap-1.5 bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100">
+            <span>👨</span><span>Yetişkin Erkek</span>
+          </button>
+          <button type="button" data-profile="child" class="profile-preset-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold border transition flex items-center gap-1.5 bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100">
+            <span>🧒</span><span>Çocuk / Ergen</span>
+          </button>
+          <button type="button" data-profile="pregnant" class="profile-preset-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold border transition flex items-center gap-1.5 bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100">
+            <span>🤰</span><span>Hamile</span>
+          </button>
+          <button type="button" data-profile="breastfeeding" class="profile-preset-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold border transition flex items-center gap-1.5 bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100">
+            <span>🤱</span><span>Emziren Anne</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Profil Girdi Formu -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5 mt-4 no-print">
+        <div>
+          <label for="inputAge" class="block text-xs font-semibold text-stone-600 mb-1">Yaş</label>
+          <input id="inputAge" type="number" min="5" max="95" value="32" class="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#1B4D3E]">
+        </div>
+        <div>
+          <label for="inputHeight" class="block text-xs font-semibold text-stone-600 mb-1">Boy (cm)</label>
+          <input id="inputHeight" type="number" min="100" max="220" value="165" class="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#1B4D3E]">
+        </div>
+        <div>
+          <label for="inputWeight" class="block text-xs font-semibold text-stone-600 mb-1">Kilo (kg)</label>
+          <input id="inputWeight" type="number" min="18" max="180" value="64" class="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#1B4D3E]">
+        </div>
+        <div>
+          <label for="selectActivity" class="block text-xs font-semibold text-stone-600 mb-1">Aktivite Düzeyi</label>
+          <select id="selectActivity" class="w-full rounded-xl border border-stone-300 px-2.5 py-2 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#1B4D3E]">
+            <option value="1.2">Masa Başı / Az Aktif</option>
+            <option value="1.375" selected>Hafif Aktif (Haftada 1-3 gün yürüyüş)</option>
+            <option value="1.55">Orta Aktif (Haftada 3-5 gün egzersiz)</option>
+            <option value="1.725">Çok Aktif (Yoğun spor / Fiziksel iş)</option>
+          </select>
+        </div>
+        <div>
+          <label for="selectGoal" class="block text-xs font-semibold text-stone-600 mb-1">Diyet Hedefi</label>
+          <select id="selectGoal" class="w-full rounded-xl border border-stone-300 px-2.5 py-2 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#1B4D3E]">
+            <option value="maintain" selected>Bağırsak Onarımı &amp; Kilo Koruma</option>
+            <option value="lose">Onarım &amp; Sağlıklı Kilo Verme (-%15)</option>
+            <option value="gain">Onarım &amp; Kilo/Kas Kazanımı (+%15)</option>
+          </select>
+        </div>
+        <div id="trimesterWrapper" class="hidden">
+          <label for="selectTrimester" class="block text-xs font-semibold text-amber-800 mb-1">Gebelik Dönemi</label>
+          <select id="selectTrimester" class="w-full rounded-xl border border-amber-400 px-2.5 py-2 text-sm font-medium bg-amber-50/60 focus:outline-none focus:ring-2 focus:ring-amber-600">
+            <option value="1">1. Trimester (İlk 3 Ay)</option>
+            <option value="2" selected>2. Trimester (3-6. Ay, +340 kcal)</option>
+            <option value="3">3. Trimester (6-9. Ay, +450 kcal)</option>
+          </select>
+        </div>
+        <div id="eggToleranceWrapper">
+          <label for="selectEggNote" class="block text-xs font-semibold text-stone-600 mb-1">Özel Hassasiyet Modu</label>
+          <select id="selectEggNote" class="w-full rounded-xl border border-stone-300 px-2.5 py-2 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#1B4D3E]">
+            <option value="standard" selected>Standart (Yumurta &amp; Fermente Serbest)</option>
+            <option value="low_histamine">Düşük Histamin (Turşu/Kefir Kısıtlı)</option>
+            <option value="sibo_friendly">SIBO Uyumu (Soğan/Sarımsak Azaltılmış)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Hesaplanan Kişisel Özet Kartları -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-5">
+        <div class="bg-emerald-50/70 border border-emerald-200/80 rounded-xl p-3">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-emerald-800">Tahmini Günlük Enerji Hedefi</span>
+          <div class="text-lg sm:text-xl font-bold text-[#1B4D3E] mt-0.5" id="statCalories">1.780 kcal</div>
+          <span class="text-[11px] text-stone-600" id="statBmrText">BMH: 1.380 kcal</span>
+        </div>
+        <div class="bg-amber-50/70 border border-amber-200/80 rounded-xl p-3">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-amber-900">Porsiyon Çarpanı</span>
+          <div class="text-lg sm:text-xl font-bold text-amber-900 mt-0.5" id="statMultiplier">1.00x (Standart)</div>
+          <span class="text-[11px] text-stone-600" id="statProfileLabel">Yetişkin Kadın Bazı</span>
+        </div>
+        <div class="bg-stone-50 border border-stone-200 rounded-xl p-3">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-stone-600">Günlük Protein Hedefi</span>
+          <div class="text-lg sm:text-xl font-bold text-stone-800 mt-0.5" id="statProtein">85 g / gün</div>
+          <span class="text-[11px] text-stone-500" id="statMeatPortion">Öğün başı ~130g et/balık</span>
+        </div>
+        <div class="bg-stone-50 border border-stone-200 rounded-xl p-3">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-stone-600">Sağlıklı Yağ &amp; Sebze</span>
+          <div class="text-lg sm:text-xl font-bold text-stone-800 mt-0.5" id="statFatVeg">75 g Yağ</div>
+          <span class="text-[11px] text-stone-500" id="statOilPortion">Öğün başı 1.5 yk zeytinyağı</span>
+        </div>
+        <div class="bg-stone-50 border border-stone-200 rounded-xl p-3">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-stone-600">Kemik Suyu &amp; Su</span>
+          <div class="text-lg sm:text-xl font-bold text-stone-800 mt-0.5" id="statWater">2.3 Litre Su</div>
+          <span class="text-[11px] text-stone-500" id="statBrothPortion">Günde 250 ml kemik suyu</span>
+        </div>
+        <div class="bg-stone-50 border border-stone-200 rounded-xl p-3">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-stone-600">Program İlerlemesi</span>
+          <div class="text-lg sm:text-xl font-bold text-[#1B4D3E] mt-0.5" id="statProgress">0 / 112 Öğün</div>
+          <span class="text-[11px] text-stone-500" id="statProgressPct">%0 Tamamlandı</span>
+        </div>
+      </div>
+
+      <!-- Profile Özel Klinik ve Porsiyon Uyarlama Bandı -->
+      <div id="profileSafetyBanner" class="mt-4 rounded-xl bg-emerald-900/5 border border-emerald-800/20 p-3.5 text-xs sm:text-sm text-stone-800 flex items-start gap-3">
+        <span class="text-lg leading-none mt-0.5" id="profileSafetyIcon">ℹ️</span>
+        <div id="profileSafetyText" class="space-y-1"></div>
+      </div>
+    </section>
+
+    <!-- ANA MODÜL SEKMELERİ (Navigation Tabs) -->
+    <nav class="flex flex-wrap gap-2 border-b border-stone-200 pb-3 no-print" aria-label="Uygulama Modülleri">
+      <button type="button" data-main-tab="menu" class="main-tab-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition bg-[#1B4D3E] text-white shadow-sm">
+        📅 4 Haftalık Kişisel Menü &amp; Tarifler
+      </button>
+      <button type="button" data-main-tab="portions" class="main-tab-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition bg-white text-stone-700 border border-stone-200 hover:bg-stone-100">
+        ⚖️ Kişiye Özel Porsiyon &amp; El Ölçüsü Rehberi
+      </button>
+      <button type="button" data-main-tab="shopping" class="main-tab-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition bg-white text-stone-700 border border-stone-200 hover:bg-stone-100">
+        🛒 Haftalık Gramajlı Alışveriş Listesi
+      </button>
+      <button type="button" data-main-tab="rules" class="main-tab-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition bg-white text-stone-700 border border-stone-200 hover:bg-stone-100">
+        🌿 Anti-Candida Kuralları &amp; Günlük Rutin
+      </button>
+    </nav>
+
+    <!-- SEKME 1: 4 HAFTALIK KİŞİSEL MENÜ VE TARİFLER -->
+    <section id="tabContent-menu" class="space-y-5">
+      <!-- Hafta Seçimi ve Gün Filtresi -->
+      <div class="bg-white rounded-2xl shadow-sm border border-stone-200/80 p-4 sm:p-5 space-y-4 no-print">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div class="flex flex-wrap gap-2" id="weekSelectorButtons">
+            <button type="button" data-week="1" class="week-tab-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition bg-[#B85D3B] text-white">
+              1. Hafta: Arınma &amp; Aç Bırakma
+            </button>
+            <button type="button" data-week="2" class="week-tab-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition bg-stone-100 text-stone-700 hover:bg-stone-200">
+              2. Hafta: Antifungal &amp; Fermente Geçiş
+            </button>
+            <button type="button" data-week="3" class="week-tab-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition bg-stone-100 text-stone-700 hover:bg-stone-200">
+              3. Hafta: Prebiyotik &amp; Karbonhidrat
+            </button>
+            <button type="button" data-week="4" class="week-tab-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition bg-stone-100 text-stone-700 hover:bg-stone-200">
+              4. Hafta: Mikrobiyota &amp; Kalıcı Denge
+            </button>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <label for="selectDayFilter" class="text-xs font-semibold text-stone-600 whitespace-nowrap">Gün Görünümü:</label>
+            <select id="selectDayFilter" class="rounded-xl border border-stone-300 px-3 py-1.5 text-xs sm:text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-[#1B4D3E]">
+              <option value="all">Tüm Haftayı Göster (7 Gün)</option>
+              <option value="0">Sadece Pazartesi</option>
+              <option value="1">Sadece Salı</option>
+              <option value="2">Sadece Çarşamba</option>
+              <option value="3">Sadece Perşembe</option>
+              <option value="4">Sadece Cuma</option>
+              <option value="5">Sadece Cumartesi</option>
+              <option value="6">Sadece Pazar</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Seçili Haftanın Klinik Açıklaması -->
+        <div id="weekPhaseDescription" class="rounded-xl bg-stone-50 border border-stone-200 p-3.5 text-xs sm:text-sm text-stone-700"></div>
+        <div id="nutritionBalancePanel" class="rounded-xl border border-blue-200 bg-blue-50/70 p-3.5 text-xs sm:text-sm text-slate-700" role="status" aria-live="polite">
+          Menü enerji kontrolü hesaplanıyor…
+        </div>
+      </div>
+
+      <!-- Günlük Öğün Kartları Listesi -->
+      <div id="weeklyMealGrid" class="space-y-4"></div>
+    </section>
+
+    <!-- SEKME 2: KİŞİYE ÖZEL PORSİYON VE EL ÖLÇÜSÜ REHBERİ -->
+    <section id="tabContent-portions" class="hidden space-y-5">
+      <div class="bg-white rounded-2xl shadow-sm border border-stone-200/80 p-5 sm:p-6">
+        <h2 class="text-base sm:text-lg font-bold text-[#1B4D3E] mb-1">⚖️ Seçili Profil İçin Besin Grubu Porsiyon Standartları</h2>
+        <p class="text-xs sm:text-sm text-stone-600 mb-4">Mutfak tartısı kullanmadığınız zamanlarda, profiliniz için hesaplanan gramajların <strong>el, yemek kaşığı ve kase</strong> karşılıklarını buradan kontrol edebilirsiniz.</p>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs sm:text-sm" id="portionGuideTable">
+            <thead>
+              <tr class="border-b-2 border-[#1B4D3E] text-[#1B4D3E]">
+                <th class="py-3 px-3 font-bold">Besin Grubu</th>
+                <th class="py-3 px-3 font-bold">Standart Baz (Kadın 1.0x)</th>
+                <th class="py-3 px-3 font-bold bg-emerald-50/80">Sizin Kişisel Porsiyonunuz</th>
+                <th class="py-3 px-3 font-bold">Pratik El / Ev Ölçüsü Karşılığı</th>
+                <th class="py-3 px-3 font-bold">Pişirme &amp; Tüketim Kuralı</th>
+              </tr>
+            </thead>
+            <tbody id="portionGuideBody" class="divide-y divide-stone-200"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Проfillere Göre Karşılaştırmalı Porsiyon Özeti -->
+      <div class="bg-white rounded-2xl shadow-sm border border-stone-200/80 p-5 sm:p-6">
+        <h3 class="text-sm sm:text-base font-bold text-[#1B4D3E] mb-3">👨‍👩‍👧‍👦 Aynı Yemeği Tüm Aile Yediğinde Kim Ne Kadar Tüketmeli? (Aile Sofrası Rehberi)</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3.5 text-xs sm:text-sm">
+          <div class="rounded-xl border border-stone-200 p-3.5 bg-stone-50/60">
+            <div class="font-bold text-stone-900 mb-1">🧒 Çocuk (7–14 Yaş)</div>
+            <p class="text-stone-600">Ana protein: <strong>80–100 g</strong> (3-4 köfte kadar). İlk 2 haftada bile enerji düşüşü olmaması için her ana öğüne <strong>1 dilim karabuğday ekmeği veya 3 yemek kaşığı kinoa</strong> eklenir.</p>
+          </div>
+          <div class="rounded-xl border border-stone-200 p-3.5 bg-stone-50/60">
+            <div class="font-bold text-stone-900 mb-1">👩 Yetişkin Kadın</div>
+            <p class="text-stone-600">Ana protein: <strong>120–140 g</strong> balık/et, kahvaltıda <strong>2 adet yumurta</strong>, öğün başı <strong>1–1.5 yemek kaşığı</strong> sızma zeytinyağı ve günde <strong>1 kase (250 ml)</strong> kemik suyu.</p>
+          </div>
+          <div class="rounded-xl border border-stone-200 p-3.5 bg-stone-50/60">
+            <div class="font-bold text-stone-900 mb-1">👨 Yetişkin Erkek</div>
+            <p class="text-stone-600">Ana protein: <strong>170–200 g</strong> balık/et, kahvaltıda <strong>3 adet yumurta</strong>, kuruyemişlerde <strong>1.5 avuç (15 badem / 5 ceviz)</strong>, öğün başı <strong>2 yemek kaşığı</strong> zeytinyağı.</p>
+          </div>
+          <div class="rounded-xl border border-amber-200 p-3.5 bg-amber-50/50">
+            <div class="font-bold text-amber-900 mb-1">🤰 Hamile</div>
+            <p class="text-stone-700">Ana protein: <strong>150–170 g</strong> (tam pişmiş!). Ketozisi önlemek için 1. haftadan itibaren <strong>karabuğday/kinoa/yeşil elma</strong> serbesttir. Kekik çayı yerine <strong>ıhlamur/papatya</strong> içilir.</p>
+          </div>
+          <div class="rounded-xl border border-emerald-200 p-3.5 bg-emerald-50/50">
+            <div class="font-bold text-emerald-900 mb-1">🤱 Emziren Anne</div>
+            <p class="text-stone-700">Süt verimi için +450 kcal ek enerji: Ana protein <strong>160–180 g</strong>, günde <strong>3–3.2 litre su</strong>, <strong>2 kase kemik suyu</strong> ve anne sütünde gaz yapmaması için yemeklere <strong>kimyon/rezene</strong> ilavesi.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SEKME 3: HAFTALIK GRAMAJLI ALIŞVERİŞ LİSTESİ -->
+    <section id="tabContent-shopping" class="hidden space-y-5">
+      <div class="bg-white rounded-2xl shadow-sm border border-stone-200/80 p-5 sm:p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-stone-100">
+          <div>
+            <h2 class="text-base sm:text-lg font-bold text-[#1B4D3E]" id="shoppingListTitle">🛒 1. Hafta Kişiye Özel Market Alışveriş Listesi</h2>
+            <p class="text-xs sm:text-sm text-stone-600 mt-0.5">Seçtiğiniz hafta ve kişi profilinin porsiyon çarpanına göre 7 günlük toplam miktarlar hesaplanmıştır.</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <select id="selectShoppingWeek" class="rounded-xl border border-stone-300 px-3 py-2 text-xs sm:text-sm font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-[#1B4D3E]">
+              <option value="1">1. Hafta Alışveriş Listesi</option>
+              <option value="2">2. Hafta Alışveriş Listesi</option>
+              <option value="3">3. Hafta Alışveriş Listesi</option>
+              <option value="4">4. Hafta Alışveriş Listesi</option>
+            </select>
+            <button id="btnCopyShopping" type="button" class="px-3.5 py-2 rounded-xl bg-[#1B4D3E] hover:bg-emerald-800 text-white text-xs sm:text-sm font-semibold transition">
+              📋 Listeyi Kopyala
+            </button>
+          </div>
+        </div>
+
+        <div id="copyFeedbackBanner" class="hidden mt-3 rounded-xl bg-emerald-100 text-emerald-900 px-4 py-2 text-xs sm:text-sm font-medium">
+          ✓ Alışveriş listesi panoya kopyalandı!
+        </div>
+
+        <div id="shoppingCategoriesContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-5"></div>
+      </div>
+    </section>
+
+    <!-- SEKME 4: ANTI-CANDIDA KURALLARI VE GÜNLÜK RUTİN TAKİBİ -->
+    <section id="tabContent-rules" class="hidden space-y-5">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div class="bg-white rounded-2xl shadow-sm border border-stone-200/80 p-5 sm:p-6 space-y-3">
+          <h2 class="text-base sm:text-lg font-bold text-[#1B4D3E]">🛡️ Genel Beslenme Bilgileri ve Güvenlik</h2>
+          <ul class="space-y-2.5 text-xs sm:text-sm text-stone-700">
+            <li class="flex items-start gap-2">
+              <span class="text-emerald-700 font-bold">1.</span>
+              <span><strong>Zerdeçal + Karabiber + Zeytinyağı Sinerjisi:</strong> Zerdeçaldaki kurkuminin bağırsak enflamasyonunu azaltması için mutlaka karabiber (piperin) ve sağlıklı yağ ile birlikte tüketin.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-emerald-700 font-bold">2.</span>
+              <span><strong>Su tüketimi:</strong> Susuzluk ve kişisel sağlık koşullarınıza göre su için; yemekle birlikte su içmek genel olarak sindirimi bozmaz.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-emerald-700 font-bold">3.</span>
+              <span><strong>Baharat ve bitkiler:</strong> Yemeklerde tat vermek için kullanılabilir; Candida enfeksiyonunun tedavisi yerine geçmez.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-emerald-700 font-bold">4.</span>
+              <span><strong>Ağız bakımı:</strong> Düzenli diş fırçalama ve ağız hijyenini sürdürün. Ağızda beyaz plak veya ağrı varsa tanı için sağlık uzmanına başvurun.</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-emerald-700 font-bold">5.</span>
+              <span><strong>Belirti takibi:</strong> Yeni veya kötüleşen belirtileri “die-off” olarak varsaymayın; belirgin ya da kalıcı şikâyetlerde sağlık uzmanına danışın.</span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-stone-200/80 p-5 sm:p-6 space-y-4">
+          <h2 class="text-base sm:text-lg font-bold text-[#1B4D3E]">✅ Günlük Onarım Rutini Kontrol Listesi</h2>
+          <p class="text-xs sm:text-sm text-stone-600">Bugün uyguladığınız destekleyici alışkanlıkları işaretleyin:</p>
+          <div id="dailyHabitsContainer" class="space-y-2.5"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- TARİF VE PORSİYON DETAY MODALI -->
+  <div id="recipeModal" class="fixed inset-0 z-50 hidden bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 no-print">
+    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-xl border border-stone-200 p-5 sm:p-6 space-y-4">
+      <div class="flex items-start justify-between gap-3 border-b border-stone-100 pb-3">
+        <div>
+          <span id="modalMealBadge" class="inline-block text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-md bg-emerald-100 text-[#1B4D3E] mb-1"></span>
+          <h3 id="modalMealTitle" class="text-lg sm:text-xl font-bold text-stone-900 font-serif-title"></h3>
+        </div>
+        <button id="btnCloseModal" type="button" class="w-8 h-8 rounded-lg bg-stone-100 hover:bg-stone-200 flex items-center justify-center text-stone-700 font-bold">✕</button>
+      </div>
+
+      <!-- Kişiye Özel Porsiyon Özeti -->
+      <div class="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-2 text-xs sm:text-sm">
+        <div>
+          <span class="font-bold text-[#1B4D3E]">Aktif Profil:</span>
+          <span id="modalProfileSummary" class="text-stone-800 ml-1"></span>
+        </div>
+        <div class="font-semibold text-amber-900" id="modalCalorieSummary"></div>
+      </div>
+
+      <!-- Malzemeler ve Kişisel Gramajlar -->
+      <div>
+        <h4 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-stone-600 mb-2">🥣 Kişiye Özel Ölçeklenmiş Malzeme Listesi</h4>
+        <ul id="modalIngredientsList" class="space-y-1.5 text-xs sm:text-sm text-stone-800 bg-stone-50 rounded-xl p-3.5 border border-stone-200/80"></ul>
+      </div>
+
+      <!-- Adım Adım Hazırlanış Tarifi -->
+      <div>
+        <h4 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-stone-600 mb-2">👩‍🍳 Adım Adım Hazırlanışı ve Püf Noktası</h4>
+        <div id="modalRecipeSteps" class="text-xs sm:text-sm text-stone-700 leading-relaxed space-y-2 bg-stone-50 rounded-xl p-3.5 border border-stone-200/80"></div>
+      </div>
+
+      <!-- Bağırsak ve Candida Faydası -->
+      <div class="rounded-xl bg-amber-50/70 border border-amber-200/80 p-3.5 text-xs sm:text-sm text-amber-950">
+        <span class="font-bold">🌿 Fonksiyonel Etki: </span>
+        <span id="modalFunctionalBenefit"></span>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <button id="btnToggleCompleteFromModal" type="button" class="px-4 py-2 rounded-xl bg-[#1B4D3E] hover:bg-emerald-800 text-white text-xs sm:text-sm font-semibold transition"></button>
+        <button id="btnCloseModalBottom" type="button" class="px-4 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs sm:text-sm font-semibold transition">Kapat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Onay / Sıfırlama Modalı (alert/confirm yerine) -->
+  <div id="resetConfirmModal" class="fixed inset-0 z-50 hidden bg-black/50 flex items-center justify-center p-4 no-print">
+    <div class="bg-white rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-xl border border-stone-200 space-y-4">
+      <h3 class="text-base sm:text-lg font-bold text-stone-900">İlerlemeyi Sıfırla</h3>
+      <p class="text-xs sm:text-sm text-stone-600">İşaretlediğiniz tüm öğün ve günlük rutin kayıtlarını sıfırlamak istediğinize emin misiniz?</p>
+      <div class="flex justify-end gap-2">
+        <button id="btnCancelReset" type="button" class="px-4 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs sm:text-sm font-semibold">Vazgeç</button>
+        <button id="btnConfirmReset" type="button" class="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs sm:text-sm font-semibold">Evet, Sıfırla</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. KİŞİ PROFİLİ ÖN AYARLARI VE HESAPLAMA MOTORU
+    // =========================================================================
+    const PROFILE_PRESETS = {
+      female: {
+        label: "Yetişkin Kadın",
+        age: 32,
+        height: 165,
+        weight: 64,
+        activity: "1.375",
+        goal: "maintain",
+        trimester: "2"
+      },
+      male: {
+        label: "Yetişkin Erkek",
+        age: 35,
+        height: 178,
+        weight: 80,
+        activity: "1.55",
+        goal: "maintain",
+        trimester: "2"
+      },
+      child: {
+        label: "Çocuk / Ergen",
+        age: 11,
+        height: 145,
+        weight: 38,
+        activity: "1.55",
+        goal: "maintain",
+        trimester: "2"
+      },
+      pregnant: {
+        label: "Hamile",
+        age: 29,
+        height: 165,
+        weight: 68,
+        activity: "1.375",
+        goal: "maintain",
+        trimester: "2"
+      },
+      breastfeeding: {
+        label: "Emziren Anne",
+        age: 30,
+        height: 165,
+        weight: 66,
+        activity: "1.375",
+        goal: "maintain",
+        trimester: "2"
+      }
+    };
+
+    const WEEK_DESCRIPTIONS = {
+      1: { title: "1. Hafta: Temel öğün planı", desc: "Bu hafta bir tedavi veya Candida temizliği protokolü değildir. Menüleri kişisel toleransınıza göre değerlendirin; gereksiz geniş gıda kısıtlamalarından kaçının." },
+      2: { title: "2. Hafta: Menü çeşitliliği", desc: "Tariflerde fermente ürünler bulunabilir. Histamin hassasiyeti veya başka bir tıbbi durumunuz varsa bu ürünlerin uygunluğunu sağlık uzmanınızla değerlendirin." },
+      3: { title: "3. Hafta: Lif ve karbonhidrat çeşitliliği", desc: "Karabuğday, kinoa, sebze ve meyve seçenekleri içerir. Lif miktarını toleransınıza göre kademeli ayarlayın; bu aşama hastalık tedavisi anlamına gelmez." },
+      4: { title: "4. Hafta: Sürdürülebilir öğün düzeni", desc: "Yulaf ve fermente süt ürünleri gibi seçenekler bulunabilir. Alerji/intolerans durumunda tüketmeyin; tariflerin kişisel uygunluğu garanti edilmez." }
+    };
+
+    // Uygulama Durumu (State)
+    const state = {
+      profileType: "female",
+      age: 32,
+      height: 165,
+      weight: 64,
+      activity: 1.375,
+      goal: "maintain",
+      trimester: 2,
+      sensitivityMode: "standard",
+      activeMainTab: "menu",
+      activeWeek: 1,
+      activeDayFilter: "all",
+      shoppingWeek: 1,
+      completedMeals: {},
+      completedHabits: {},
+      currentModalMealKey: null,
+      allergens: "",
+      profileName: "Kişi 1"
+    };
+
+    // LocalStorage'dan Güvenli Yükleme
+    function loadSavedState() {
+      try {
+        const saved = localStorage.getItem("beslenPlusPro_state_v2");
+        if (saved) Object.assign(state, JSON.parse(saved));
+        const savedMeals = localStorage.getItem("leakyGut_completedMeals_v1");
+        if (!Object.keys(state.completedMeals || {}).length && savedMeals) state.completedMeals = JSON.parse(savedMeals);
+        const savedHabits = localStorage.getItem("leakyGut_completedHabits_v1");
+        if (!Object.keys(state.completedHabits || {}).length && savedHabits) state.completedHabits = JSON.parse(savedHabits);
+      } catch (e) {
+        // Sandbox iframe kısıtlaması varsa sessizce devam et
+      }
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem("leakyGut_completedMeals_v1", JSON.stringify(state.completedMeals));
+        localStorage.setItem("leakyGut_completedHabits_v1", JSON.stringify(state.completedHabits));
+        localStorage.setItem("beslenPlusPro_state_v2", JSON.stringify(state));
+      } catch (e) {}
+    }
+
+    // Kişisel Metabolizma ve Porsiyon Çarpanı Hesaplama
+    function calculateProfileMetrics() {
+      const { profileType, age, height, weight, activity, goal, trimester } = state;
+      // Girdi koruması: geçersiz/sıfır değerler hesaplamaya taşınmasın.
+      const safeAge = Math.max(5, Math.min(95, Number(age) || 30));
+      const safeHeight = Math.max(90, Math.min(220, Number(height) || 165));
+      const safeWeight = Math.max(15, Math.min(180, Number(weight) || 64));
+      const safeActivity = [1.2, 1.375, 1.55, 1.725].includes(Number(activity)) ? Number(activity) : 1.375;
+
+      // Yetişkinlerde Mifflin–St Jeor tahmini; çocuklarda bu denklem yerine ayrı kaba tahmin.
+      // Hamilelik/emzirme/çocuk profilleri klinik değerlendirme gerektirir.
+
+      let bmr = 10 * safeWeight + 6.25 * safeHeight - 5 * safeAge;
+      if (profileType === "male") {
+        bmr += 5;
+      } else {
+        bmr -= 161;
+      }
+      if (profileType === "child") {
+        // Çocuk/ergen büyüme düzeltmesi
+        bmr = Math.max(900, Math.round(22.5 * safeWeight + 499));
+      }
+
+      let tdee = Math.round(bmr * safeActivity);
+
+      // Gebelik ve Emzirme Ek Enerji Gereksinimi
+      if (profileType === "pregnant") {
+        if (trimester === 1) tdee += 100;
+        else if (trimester === 2) tdee += 340;
+        else tdee += 450;
+      } else if (profileType === "breastfeeding") {
+        tdee += 450;
+      }
+
+      // Hedef Uyarlaması (Çocuk ve Hamilede kalori kısıtlaması yapılmaz)
+      let targetCalories = tdee;
+      if (!["child", "pregnant", "breastfeeding"].includes(profileType)) {
+        if (goal === "lose") targetCalories = Math.round(tdee * 0.85);
+        else if (goal === "gain") targetCalories = Math.round(tdee * 1.15);
+      } else if (profileType === "child" && goal === "gain") {
+        targetCalories = Math.round(tdee * 1.10);
+      }
+
+      // Baz referans: 1.750 kcal (Standart Yetişkin Kadın = 1.00x)
+      const rawMultiplier = targetCalories / 1750;
+      // Çarpan yalnızca mevcut tarif porsiyonlarını ölçekler; günlük hedefin tutturulduğu anlamına gelmez.
+      const multiplier = Math.max(0.65, Math.min(1.85, Math.round(rawMultiplier * 20) / 20));
+
+      // Besin grubu bazlı özel çarpanlar
+      let proteinMult = multiplier;
+      if (profileType === "male") proteinMult = Math.max(multiplier, 1.30);
+      if (profileType === "pregnant" || profileType === "breastfeeding") proteinMult = Math.max(multiplier, 1.25);
+      if (profileType === "child") proteinMult = Math.max(0.75, Math.min(1.05, multiplier));
+
+      const vegMult = profileType === "child" ? 0.70 : Math.max(0.85, Math.min(1.40, multiplier));
+      const fatMult = multiplier;
+      const carbMult = (profileType === "pregnant" || profileType === "breastfeeding") ? Math.max(1.20, multiplier) : multiplier;
+
+      // Günlük su ve kemik suyu hedefleri
+      let waterLiters = Math.round((weight * 0.035) * 10) / 10;
+      if (profileType === "pregnant") waterLiters = Math.max(2.6, waterLiters + 0.4);
+      if (profileType === "breastfeeding") waterLiters = Math.max(3.0, waterLiters + 0.7);
+      if (profileType === "child") waterLiters = Math.max(1.5, Math.min(2.2, waterLiters));
+
+      const dailyProteinGrams = Math.round(85 * proteinMult);
+      const dailyFatGrams = Math.round(75 * fatMult);
+      const brothMl = profileType === "child" ? 150 : (profileType === "breastfeeding" || profileType === "male" ? 350 : 250);
+
+      return {
+        bmr: Math.round(bmr),
+        targetCalories,
+        multiplier,
+        proteinMult,
+        vegMult,
+        fatMult,
+        carbMult,
+        waterLiters,
+        dailyProteinGrams,
+        dailyFatGrams,
+        brothMl
+      };
+    }
+
+    // Birim ölçekleme yardımcı fonksiyonları
+    function scaleGrams(baseGrams, mult) {
+      return Math.round((baseGrams * mult) / 10) * 10;
+    }
+
+    function scaleCount(baseCount, mult, allowHalf = false) {
+      const raw = baseCount * mult;
+      if (allowHalf) {
+        return Math.max(0.5, Math.round(raw * 2) / 2);
+      }
+      return Math.max(1, Math.round(raw));
+    }
+
+    function scaleSpoons(baseSpoons, mult) {
+      const raw = baseSpoons * mult;
+      return Math.max(0.5, Math.round(raw * 2) / 2);
+    }
+
+    // =========================================================================
+    // 2. DİNAMİK REÇETE VE ÖĞÜN OLUŞTURUCU (4 HAFTA x 7 GÜN = 28 TAM GÜN)
+    // =========================================================================
+    // Hassasiyet ve Profil Uyarlamalı Malzeme Dönüştürücü
+    function adaptTeaForProfile(defaultTea) {
+      if (state.profileType === "pregnant") {
+        if (defaultTea.includes("kekik") || defaultTea.includes("Kekik")) {
+          return "1 fincan ıhlamur veya papatya çayı (Hamilelikte kekik çayı yerine güvenli alternatif)";
+        }
+      }
+      if (state.profileType === "child") {
+        if (defaultTea.includes("kekik") || defaultTea.includes("yeşil çay")) {
+          return "1 fincan ılık ıhlamur veya elma-tarçın çayı (Çocuklara uygun kafeinsiz)";
+        }
+      }
+      return defaultTea;
+    }
+
+    function getSafetyCarbAddition(week, mealSlot, carbMult) {
+      // 1. ve 2. haftada normalde tahıl yoktur; ancak Çocuk, Hamile ve Emziren profillerde ketozis önlenir
+      if (week <= 2 && (state.profileType === "pregnant" || state.profileType === "child" || state.profileType === "breastfeeding")) {
+        const slices = state.profileType === "child" ? 1 : scaleCount(1, carbMult);
+        const spoons = state.profileType === "child" ? 3 : scaleSpoons(4, carbMult);
+        if (mealSlot === "breakfast") {
+          return `${slices} dilim (${slices * 30} g) karabuğday ekmeği (${PROFILE_PRESETS[state.profileType].label} profili için ketozis önleyici ek karbonhidrat)`;
+        }
+        if (mealSlot === "lunch") {
+          return `${spoons} yemek kaşığı (${Math.round(spoons * 25)} g) haşlanmış kinoa veya karabuğday (${PROFILE_PRESETS[state.profileType].label} enerji desteği)`;
+        }
+      }
+      return null;
+    }
+
+    function adaptSensitivityText(text) {
+      let res = text;
+      if (state.sensitivityMode === "low_histamine") {
+        res = res
+          .replace(/ev yapımı lahana turşusu \([^)]*\)/gi, "taze haşlanmış enginar/kabak (Düşük histamin modu: turşu yerine)")
+          .replace(/ev yapımı lahana turşusu/gi, "zeytinyağlı taze yeşillik (Düşük histamin modu)")
+          .replace(/lahana turşusu/gi, "taze roka-dereotu (Düşük histamin modu)")
+          .replace(/ev yapımı kefir/gi, "taze badem sütü (Düşük histamin modu)");
+      } else if (state.sensitivityMode === "sibo_friendly") {
+        res = res
+          .replace(/soğan ve sarımsakla/gi, "taze zencefil ve frenk soğanının yeşil kısmı ile (SIBO uyumu)")
+          .replace(/sarımsaklı/gi, "zencefilli ve kimyonlu (SIBO uyumu)")
+          .replace(/Sarımsak,/gi, "Taze zencefil ve biberiye (SIBO uyumu),");
+      }
+      return res;
+    }
+
+    // 4 Haftalık Detaylı Veri Tabanı
+    const DAYS_TR = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"];
+
+    function buildMealData(week, dayIndex, metrics) {
+      const { proteinMult, vegMult, fatMult, carbMult, brothMl } = metrics;
+      const eggCount = state.profileType === "child" ? 1 : (state.profileType === "male" ? 3 : scaleCount(2, proteinMult));
+      const fishGrams = scaleGrams(150, proteinMult);
+      const poultryGrams = scaleGrams(140, proteinMult);
+      const meatGrams = scaleGrams(140, proteinMult);
+      const kofteCount = scaleCount(4, proteinMult);
+      const kofteGrams = kofteCount * 30;
+      const vegGrams = scaleGrams(200, vegMult);
+      const oilSpoons = scaleSpoons(1.5, fatMult);
+      const oliveCount = scaleCount(8, fatMult);
+      const almondCount = scaleCount(10, fatMult);
+      const walnutCount = scaleCount(3, fatMult);
+      const pumpkinSeedGrams = scaleGrams(25, fatMult);
+      const grainSpoons = scaleSpoons(4, carbMult);
+      const breadSlices = scaleCount(1, carbMult);
+
+      const week1Days = [
+        // 1. HAFTA
+        {
+          breakfast: {
+            title: "Hindistan Cevizi Yağlı Yeşil Omlet & Avokado",
+            baseCal: 410,
+            ingredients: [
+              `${eggCount} adet organik/gezen tavuk yumurtası (${state.profileType === "pregnant" ? "tam pişmiş" : "arzuya göre pişmiş"})`,
+              `${scaleGrams(70, vegMult)} g taze ıspanak ve 1/3 demet dereotu`,
+              `1 tatlı kaşığı soğuk sıkım hindistan cevizi yağı + 1 tatlı kaşığı sızma zeytinyağı`,
+              `${scaleSpoons(0.5, fatMult)} adet olgun avokado ve ${oliveCount} adet az tuzlu zeytin`
+            ],
+            recipe: "Ispanak ve dereotunu ince kıyıp hindistan cevizi yağında 2 dakika yumuşatın. Çırpılmış yumurtaları ekleyip kısık ateşte pişirin. Yanında limon ve kaya tuzu gezdirilmiş avokado dilimleriyle servis edin.",
+            benefit: "Hindistan cevizi yağındaki kaprilik asit sabah saatlerinde Candida hücre zarını zayıflatırken, yumurta ve avokado kan şekerini dalgalandırmadan uzun süre tokluk sağlar."
+          },
+          lunch: {
+            title: "Sarımsaklı Fırın Somon & Buharda Brokoli-Karnabahar",
+            baseCal: 520,
+            ingredients: [
+              `${fishGrams} g taze somon fileto`,
+              `${vegGrams} g brokoli ve karnabahar çiçekleri`,
+              `${oilSpoons} yemek kaşığı sızma zeytinyağı, yarım limon suyu, 1 diş sarımsak`
+            ],
+            recipe: "Somonu zeytinyağı, limon suyu ve ezilmiş sarımsakla marine edip 190°C fırında 18–20 dakika pişirin. Brokoli ve karnabaharı diri kalacak şekilde 6–7 dakika buharda haşlayıp üzerine sızma zeytinyağı gezdirin.",
+            benefit: "Somonun içerdiği EPA ve DHA Omega-3 yağ asitleri bağırsak mukozasındaki enflamasyonu doğrudan baskılar."
+          },
+          snack: {
+            title: "Zerdeçallı İlikli Kemik Suyu & Çiğ Badem",
+            baseCal: 190,
+            ingredients: [
+              `1 kase (${brothMl} ml) ılık ev yapımı ilikli kemik suyu`,
+              `1/2 çay kaşığı toz zerdeçal, 1 çimdik taze çekilmiş karabiber ve zencefil`,
+              `${almondCount} adet (${scaleGrams(20, fatMult)} g) çiğ badem`
+            ],
+            recipe: "İlikli kemik suyunu ısıtıp içine zerdeçal ve karabiberi ekleyerek karıştırın. Yanında çiğ bademleri iyi çiğneyerek tüketin.",
+            benefit: "Kemik suyundaki L-glutamin ve glisin amino asitleri bağırsak epitel hücreleri arasındaki gevşemiş sıkı bağlantıları (tight junctions) onarır."
+          },
+          dinner: {
+            title: "Kekikli Hindi Sote & Fırın Kabak Dilimleri",
+            baseCal: 440,
+            ingredients: [
+              `${poultryGrams} g kuşbaşı doğranmış hindi göğüs eti`,
+              `${vegGrams} g kabak (halka doğranmış) ve 1 kase mevsim yeşilliği`,
+              `${oilSpoons} yemek kaşığı sızma zeytinyağı, 1 çay kaşığı kekik ve zerdeçal`
+            ],
+            recipe: "Hindi etlerini zeytinyağında suyunu salıp çekene kadar soteleyin, kekik ve zerdeçal ekleyin. Kabakları fırın tepsisinde zeytinyağı ve dereotuyla 20 dakika fırınlayıp birlikte servis edin.",
+            benefit: "Kekikteki karvakrol doğal antifungal etki gösterirken, pişmiş kabak bağırsağı yormayan çözünür lif sağlar."
+          }
+        },
+        {
+          breakfast: {
+            title: "Kimyonlu Haşlanmış Yumurta, Avokado & Ceviz",
+            baseCal: 390,
+            ingredients: [
+              `${eggCount} adet haşlanmış yumurta`,
+              `${scaleSpoons(0.5, fatMult)} adet avokado, 1 adet salatalık ve yarım demet roka`,
+              `${walnutCount} tam adet (${scaleGrams(20, fatMult)} g) çiğ ceviz ve 1 tatlı kaşığı sızma zeytinyağı`
+            ],
+            recipe: "Haşlanmış yumurtaları ikiye bölüp üzerine sızma zeytinyağı, kimyon ve kekik gezdirin. Yanında avokado, roka ve cevizle tüketin.",
+            benefit: "Kimyon gaz oluşumunu önler, ceviz ise bitkisel Omega-3 (ALA) ve polifenollerle mikrobiyotayı korur."
+          },
+          lunch: {
+            title: "Kemik Sulu Sebze Çorbası & Ekmeksiz Izgara Köfte",
+            baseCal: 530,
+            ingredients: [
+              `1 kase (${brothMl} ml) kemik sulu kabak-kereviz sapı-pırasa çorbası (unsuz)`,
+              `${kofteCount} adet (${kofteGrams} g) ızgara köfte (ekmek içi yerine baharat ve soğanla yoğrulmuş)`,
+              `1 kase zeytinyağlı-limonlu roka salatası`
+            ],
+            recipe: "Kabak, pırasa ve kereviz sapını kemik suyunda yumuşayana kadar pişirip blenderdan geçirin. Yanında ızgara veya döküm tavada pişmiş ekmeksiz köftelerle tüketin.",
+            benefit: "Yüksek kaliteli protein ve kolajen birleşimi doku onarımını hızlandırırken sıfır nişasta içeriği Candida'yı aç bırakır."
+          },
+          snack: {
+            title: "Antifungal Bitki Çayı & Çiğ Kabak Çekirdeği",
+            baseCal: 160,
+            ingredients: [
+              adaptTeaForProfile("1 fincan taze demlenmiş kekik veya rezene çayı"),
+              `1 avuç (${pumpkinSeedGrams} g) çiğ kabak çekirdeği içi`
+            ],
+            recipe: "Çayınızı kaynar suda 5–6 dakika ağzı kapalı demleyin. Yanında kavrulmamış çiğ kabak çekirdeği tüketin.",
+            benefit: "Kabak çekirdeği bağırsak mukozasının bütünlüğü için kritik olan çinko minerali açısından çok zengindir ve parazit/mantar karşıtı etki gösterir."
+          },
+          dinner: {
+            title: "Izgara Levrek/Çipura & Sarımsaklı Pazı Kavurması",
+            baseCal: 460,
+            ingredients: [
+              `${fishGrams} g ızgara veya fırın çipura/levrek fileto`,
+              `${vegGrams} g doğranmış pazı (veya ıspanak)`,
+              `${oilSpoons} yemek kaşığı sızma zeytinyağı, 1 diş sarımsak ve limon`
+            ],
+            recipe: "Balığı zeytinyağı ve defne yaprağıyla fırınlayın. Pazıları sarımsaklı zeytinyağında hafifçe soteleyerek balıkla birlikte servis edin.",
+            benefit: "Akşam öğününde hafif balık proteini ve pişmiş koyu yeşil yapraklı sebzeler gece boyu bağırsak onarımını destekler."
+          }
+        },
+        {
+          breakfast: {
+            title: "Tarçınlı Chia & Keten Tohumu Lapası",
+            baseCal: 380,
+            ingredients: [
+              `${scaleSpoons(2, fatMult)} yemek kaşığı chia tohumu + 1 yemek kaşığı taze öğütülmüş keten tohumu`,
+              `1 su bardağı (${scaleGrams(200, fatMult)} ml) şekersiz ev yapımı badem sütü`,
+              `1 çay kaşığı Seylan tarçını ve ${scaleCount(6, fatMult)} adet çiğ fındık`
+            ],
+            recipe: "Chia ve öğütülmüş keten tohumunu badem sütü ve tarçınla karıştırıp en az 2 saat (veya geceden) buzdolabında bekletin. Üzerine kırılmış çiğ fındık ekleyerek tüketin.",
+            benefit: "Keten ve chia tohumunun oluşturduğu müsilaj (jelimsi lif), tahriş olmuş bağırsak duvarını adeta koruyucu bir merhem gibi sarar."
+          },
+          lunch: {
+            title: "Biberiyeli Fırın Tavuk & Zeytinyağlı Taze Fasulye",
+            baseCal: 510,
+            ingredients: [
+              `${poultryGrams} g biberiyeli fırın tavuk kalça/göğüs`,
+              `${vegGrams} g zeytinyağlı taze fasulye (domates salçası yerine zerdeçal ve soğanla pişmiş)`,
+              `1 kase dereotlu salatalık söğüş`
+            ],
+            recipe: "Tavuğu biberiye, sarımsak ve zeytinyağı ile fırınlayın. Taze fasulyeyi kısık ateşte kendi suyunda zeytinyağıyla pişirip yanında servis edin.",
+            benefit: "Biberiye rozmarinik asit içeriğiyle güçlü bir antioksidandır; taze fasulye ise düşük glisemik indeksli prebiyotik lif sunar."
+          },
+          snack: {
+            title: "İlikli Kemik Suyu & Limonlu Avokado",
+            baseCal: 210,
+            ingredients: [
+              `1 kase (${brothMl} ml) ılık ilikli kemik suyu`,
+              `${scaleSpoons(0.5, fatMult)} adet avokado (üzerine limon suyu ve kaya tuzu)`
+            ],
+            recipe: "Kemik suyunu ılık olarak için, yanında limonlu avokado dilimlerini tüketin.",
+            benefit: "Kan şekerini yükseltmeden sağlıklı tekli doymamış yağ asitleri ve kolajen desteği sağlar."
+          },
+          dinner: {
+            title: "Kereviz Saplı Kuzu Haşlama & Buharda Brüksel Lahanası",
+            baseCal: 490,
+            ingredients: [
+              `${meatGrams} g kuşbaşı kuzu eti (kemik suyunda haşlanmış)`,
+              `${vegGrams} g brüksel lahanası ve 2 dal kereviz sapı`,
+              `${oilSpoons} yemek kaşığı sızma zeytinyağı, soğan ve sarımsak`
+            ],
+            recipe: "Kuzu etini kereviz sapı ve soğanla kısık ateşte yumuşayana kadar haşlayın. Buharda pişmiş brüksel lahanalarını zeytinyağı ve limonla tatlandırarak yanında tüketin.",
+            benefit: "Brüksel lahanası gibi turpgil sebzeler içerdiği sülforafan ile karaciğerin Candida toksinlerini temizlemesine (detoksifikasyona) yardımcı olur."
+          }
+        },
+        {
+          breakfast: {
+            title: "Unsuz Fırın Kabak Mücveri & Zeytin",
+            baseCal: 395,
+            ingredients: [
+              `1 orta boy (${scaleGrams(150, vegMult)} g) rendelenmiş ve suyu sıkılmış kabak`,
+              `${eggCount} adet yumurta, yarım demet dereotu ve maydanoz`,
+              `1 tatlı kaşığı çörek otu, ${oilSpoons} yemek kaşığı zeytinyağı ve ${oliveCount} adet zeytin`
+            ],
+            recipe: "Suyu iyice sıkılmış rendelenmiş kabağı yumurta, ince kıyılmış yeşillikler ve çörek otuyla karıştırın. Yağlı kağıt serili fırın tepsisinde 180°C'de 20–25 dakika pişirin.",
+            benefit: "Çörek otu içerdiği timokinon maddesiyle hem güçlü bir antifungaldir hem de bağırsaktaki histamin reaksiyonlarını yatıştırır."
+          },
+          lunch: {
+            title: "Zeytinyağlı Fırın Sardalya & Kuşkonmaz",
+            baseCal: 500,
+            ingredients: [
+              `${fishGrams} g ayıklanmış taze sardalya (veya uskumru)`,
+              `${vegGrams} g kuşkonmaz (veya taze fasulye) ve roka salatası`,
+              `${oilSpoons} yemek kaşığı sızma zeytinyağı, limon ve defne yaprağı`
+            ],
+            recipe: "Sardalyaları zeytinyağı ve limon dilimleriyle fırında 15 dakika pişirin. Yanında fırınlanmış kuşkonmaz ve bol roka ile servis edin.",
+            benefit: "Sardalya gibi küçük yüzey balıkları ağır metal (cıva) barındırmaz ve en yüksek biyoayarlanımlı Omega-3 kaynaklarından biridir."
+          },
+          snack: {
+            title: "Taze Zencefil-Limon Çayı & Çiğ Badem",
+            baseCal: 170,
+            ingredients: [
+              `1 fincan taze dilimlenmiş zencefil ve limon çayı`,
+              `${almondCount} adet çiğ badem`
+            ],
+            recipe: "3–4 ince dilim taze zencefili sıcak suda 6 dakika demleyip ılındığında limon ekleyin. Yanında bademleri tüketin.",
+            benefit: "Taze zencefil bağırsak motilitesini (hareketliliğini) düzenler ve mide bulantısı ile şişkinliği giderir."
+          },
+          dinner: {
+            title: "Kıymalı Karnabahar 'Pilavı'",
+            baseCal: 460,
+            ingredients: [
+              `${meatGrams} g orta yağlı dana veya kuzu kıyma`,
+              `${vegGrams} g karnabahar (mutfak robotunda pirinç boyutunda çekilmiş)`,
+              `${oilSpoons} yemek kaşığı zeytinyağı, 1 diş sarımsak, kimyon ve maydanoz`
+            ],
+            recipe: "Kıymayı soğan ve sarımsakla zeytinyağında kavurun. Üzerine pirinç gibi çekilmiş karnabaharı ekleyip 7–8 dakika yumuşayana kadar soteleyin, maydanozla servis edin.",
+            benefit: "Pirinç nişastası olmadan pilav doygunluğu sağlar; karnabahardaki indol-3-karbinol bağırsak bağışıklığını güçlendirir."
+          }
+        },
+        {
+          breakfast: {
+            title: "Pırasalı ve Ispanaklı Yumurta Kapama",
+            baseCal: 405,
+            ingredients: [
+              `${eggCount} adet yumurta`,
+              `${scaleGrams(120, vegMult)} g ince doğranmış pırasa ve ıspanak`,
+              `${scaleSpoons(0.5, fatMult)} adet avokado ve ${oilSpoons} yemek kaşığı zeytinyağı`
+            ],
+            recipe: "Pırasa ve ıspanağı zeytinyağında kısık ateşte yumuşayana kadar soteleyin. Üzerine yumurtaları kırıp kapağını kapatarak pişirin.",
+            benefit: "Pişmiş pırasa bağırsaktaki yararlı bakteriler için yumuşak prebiyotik lif (inülin) sağlar."
+          },
+          lunch: {
+            title: "Izgara Hindi Külbastı & Zeytinyağlı Semizotu",
+            baseCal: 480,
+            ingredients: [
+              `${poultryGrams} g ızgara hindi külbastı (kekik ve zeytinyağı marine)`,
+              `${vegGrams} g zeytinyağlı ve sarımsaklı pişmiş semizotu yemeği`
+            ],
+            recipe: "Hindi etini döküm tavada pişirin. Yanında soğan, sarımsak ve zeytinyağıyla hafifçe pişirilmiş semizotu yemeği servis edin.",
+            benefit: "Semizotu sebzeler arasında en yüksek bitkisel Omega-3 ve glutatyon içeriğine sahip besindir."
+          },
+          snack: {
+            title: "İlikli Kemik Suyu & Çiğ Ceviz",
+            baseCal: 195,
+            ingredients: [
+              `1 kase (${brothMl} ml) ılık ilikli kemik suyu`,
+              `${walnutCount} tam adet çiğ ceviz`
+            ],
+            recipe: "Ilık kemik suyunu zerdeçal ilavesiyle için, yanında cevizleri tüketin.",
+            benefit: "Öğleden sonra oluşabilecek enerji düşüşünü önler ve mukoza onarımını sürdürür."
+          },
+          dinner: {
+            title: "Kemik Sulu Sebzeli Balık Çorbası & Brokoli",
+            baseCal: 430,
+            ingredients: [
+              `${fishGrams} g beyaz etli balık (levrek/mezgit) parçalarıyla hazırlanmış kemik sulu sebze çorbası`,
+              `${scaleGrams(150, vegMult)} g buharda brokoli (zeytinyağı ve limon soslu)`
+            ],
+            recipe: "Haşlanmış balık parçalarını kereviz sapı, kabak ve bol dereotu ile kemik suyunda kaynatın. Un yerine sebze püresiyle kıvam verin.",
+            benefit: "Sindirimi en kolay akşam öğünlerinden biridir; bağırsağı gece dinlenmesine hazırlar."
+          }
+        },
+        {
+          breakfast: {
+            title: "Hindistan Cevizi Unlu Krep & Tahin",
+            baseCal: 420,
+            ingredients: [
+              `${eggCount} adet yumurta + 1 yemek kaşığı hindistan cevizi unu + 2 yemek kaşığı badem sütü`,
+              `1 tatlı kaşığı doğal susam tahini (şekersiz)`,
+              `${oliveCount} adet zeytin ve 1 adet salatalık`
+            ],
+            recipe: "Yumurta, hindistan cevizi unu ve badem sütünü çırpıp hindistan cevizi yağı sürülmüş tavada krep gibi pişirin. Üzerine tahin ve tarçın gezdirin.",
+            benefit: "Glutensiz ve tahılsız ekmek alternatifi sunar; tahin kalsiyum ve sağlıklı yağ desteği verir."
+          },
+          lunch: {
+            title: "Izgara Köfte & Sarımsaklı Kabak Spagetti",
+            baseCal: 520,
+            ingredients: [
+              `${kofteCount} adet (${kofteGrams} g) ızgara köfte`,
+              `${vegGrams} g jülyen/spagetti şeklinde doğranmış kabak`,
+              `${oilSpoons} yemek kaşığı sızma zeytinyağı, sarımsak ve taze fesleğen/nane`
+            ],
+            recipe: "İnce şeritler halinde kesilmiş kabakları sarımsaklı zeytinyağında sadece 4–5 dakika diri kalacak şekilde soteleyin. Üzerine ızgara köfteleri yerleştirin.",
+            benefit: "Makarna yerine sıfır nişastalı, yüksek potasyum ve lifli bir alternatif oluşturur."
+          },
+          snack: {
+            title: "Papatya Çayı & Çiğ Kabak Çekirdeği",
+            baseCal: 155,
+            ingredients: [
+              `1 fincan papatya çayı`,
+              `1 avuç (${pumpkinSeedGrams} g) çiğ kabak çekirdeği içi`
+            ],
+            recipe: "Papatya çayını 5 dakika demleyip kabak çekirdeği ile tüketin.",
+            benefit: "Papatya bağırsak düz kaslarındaki spazmı çözer ve kortizol (stres) seviyesini düşürür."
+          },
+          dinner: {
+            title: "Zencefilli Fırın Somon & Fırın Kereviz",
+            baseCal: 480,
+            ingredients: [
+              `${fishGrams} g taze somon fileto`,
+              `${vegGrams} g elma dilim doğranmış kereviz ve yeşil biber`,
+              `${oilSpoons} yemek kaşığı zeytinyağı, taze rendelenmiş zencefil ve limon`
+            ],
+            recipe: "Kereviz dilimlerini ve somonu zencefilli zeytinyağı sosuyla fırında pişirin.",
+            benefit: "Kereviz sindirim enzimlerini uyarır ve bağırsak hareketlerini düzenler."
+          }
+        },
+        {
+          breakfast: {
+            title: "Çörek Otlu Göz Yumurta & Bol Yeşillikli Pazar Kahvaltısı",
+            baseCal: 415,
+            ingredients: [
+              `${eggCount} adet göz yumurta (zeytinyağında kısık ateşte pişmiş)`,
+              `${scaleSpoons(0.5, fatMult)} adet avokado, roka, maydanoz, dereotu`,
+              `${oliveCount} adet zeytin ve ${scaleCount(6, fatMult)} adet çiğ badem`
+            ],
+            recipe: "Yumurtaları zeytinyağında pişirip üzerine çörek otu ve kekik serpin. Yanında bol limonlu-zeytinyağlı yeşillik tabağı ve avokado ile servis edin.",
+            benefit: "Klorofil zengini yeşillikler karaciğer ve bağırsak detoksunu destekler."
+          },
+          lunch: {
+            title: "Fırında Kuzu İncik & Sarımsaklı Karnabahar Püresi",
+            baseCal: 550,
+            ingredients: [
+              `${meatGrams + 20} g kemikli kuzu incik (uzun süre kısık ateşte pişmiş)`,
+              `${vegGrams} g haşlanmış karnabahar`,
+              `${oilSpoons} yemek kaşığı zeytinyağı, sarımsak ve muskat/kimyon`
+            ],
+            recipe: "Buharda iyice yumuşayan karnabaharları zeytinyağı, sarımsak ve tuz ile blenderdan geçirip patates püresi kıvamına getirin. Üzerine didiklenmiş kuzu incik yerleştirin.",
+            benefit: "Kısık ateşte kemikle pişen kuzu incik doğal kolajen ve jelatin deposudur; bağırsak mukoza onarımını zirveye taşır."
+          },
+          snack: {
+            title: "Hindistan Cevizi Yağlı Kemik Suyu",
+            baseCal: 165,
+            ingredients: [
+              `1 kase (${brothMl} ml) sıcak ilikli kemik suyu`,
+              `1 çay kaşığı soğuk sıkım hindistan cevizi yağı`
+            ],
+            recipe: "Sıcak kemik suyunun içine hindistan cevizi yağını ekleyip karıştırarak için.",
+            benefit: "1. haftanın sonunda hem antifungal etkiyi hem de mukoza onarımını bir arada tamamlar."
+          },
+          dinner: {
+            title: "Kemik Sulu Kabak Çorbası & Zeytinyağlı Enginar",
+            baseCal: 410,
+            ingredients: [
+              `1 kase (${brothMl} ml) kemik sulu kabak-ıspanak çorbası`,
+              `${scaleCount(2, vegMult)} adet zeytinyağlı enginar çanağı (dereotlu ve soğanlı, bezelyesiz/havuçsuz)`,
+              `${oilSpoons} yemek kaşığı sızma zeytinyağı ve limon`
+            ],
+            recipe: "Enginar çanaklarını bol soğan, limon suyu ve zeytinyağıyla kısık ateşte pişirin, üzerine bol taze dereotu serpin.",
+            benefit: "Enginar içerdiği sinarin ile safra akışını artırır ve Candida'nın ölümüyle açığa çıkan toksinlerin karaciğerden atılmasını hızlandırır."
+          }
+        }
+      ];
+
+      // 2., 3. ve 4. haftalar için haftalık faz kurallarına göre öğün modifikasyonları
+      const baseDay = JSON.parse(JSON.stringify(week1Days[dayIndex]));
+
+      if (week === 2) {
+        // 2. Hafta: Lahana turşusu, elma sirkesi ve tahin eklenir
+        baseDay.lunch.ingredients.push(adaptSensitivityText(`${scaleSpoons(1.5, vegMult)} yemek kaşığı ev yapımı lahana turşusu (sauerkraut)`));
+        baseDay.lunch.benefit += " Eklenen ev yapımı lahana turşusu doğal Lactobacillus bakterileriyle bağırsak florasını yeniden aşılamaya başlar.";
+        if (dayIndex % 2 === 0) {
+          baseDay.breakfast.title = "Dereotlu Omlet & Fermente Lahana Turşusu";
+          baseDay.breakfast.ingredients.push(adaptSensitivityText("1 yemek kaşığı ev yapımı lahana turşusu"));
+        } else {
+          baseDay.snack.ingredients.push("1 tatlı kaşığı doğal tahin (üzerine Seylan tarçını serpilmiş)");
+        }
+      } else if (week === 3) {
+        // 3. Hafta: Karabuğday, kinoa, yeşil elma ve yaban mersini eklenir
+        baseDay.breakfast.ingredients.push(`${breadSlices} ince dilim (${breadSlices * 30} g) karabuğday (greçka) ekmeği`);
+        baseDay.lunch.ingredients.push(`${grainSpoons} yemek kaşığı (${Math.round(grainSpoons * 25)} g) haşlanmış kinoa veya karabuğday pilavı`);
+        baseDay.lunch.ingredients.push(adaptSensitivityText("1.5 yemek kaşığı ev yapımı lahana turşusu"));
+        if (dayIndex % 2 === 0) {
+          baseDay.snack.title = "Antioksidan Yaban Mersini & Çiğ Kuruyemiş";
+          baseDay.snack.ingredients = [
+            `1 küçük avuç (${scaleGrams(50, carbMult)} g) taze veya dondurulmuş yaban mersini`,
+            `${almondCount} adet çiğ badem`,
+            adaptTeaForProfile("1 fincan yeşil çay veya rezene çayı")
+          ];
+          baseDay.snack.benefit = "Yaban mersini düşük şeker oranına karşın çok yüksek polifenol içerir ve bağırsaktaki Akkermansia muciniphila adlı koruyucu bakteriyi çoğaltır.";
+        } else {
+          baseDay.snack.title = "Tarçınlı ve Tahinli Ekşi Yeşil Elma & Kemik Suyu";
+          baseDay.snack.ingredients = [
+            `Yarım adet (${scaleGrams(75, carbMult)} g) ekşi yeşil elma (Granny Smith)`,
+            `1 tatlı kaşığı tahin ve 1/2 çay kaşığı toz tarçın`,
+            `1 kase (${brothMl} ml) ilikli kemik suyu`
+          ];
+          baseDay.snack.benefit = "Yeşil elmadaki pektin lifi bağırsak bakterilerinin bütirat (bağırsak duvarını onaran kısa zincirli yağ asidi) üretmesini sağlar.";
+        }
+      } else if (week === 4) {
+        // 4. Hafta: Ev yapımı koyun/keçi yoğurdu, kefir ve glutensiz yulaf eklenir
+        if (dayIndex === 0 || dayIndex === 3) {
+          baseDay.breakfast.title = "Prebiyotik Glutensiz Yulaf Lapası & Yeşil Elma";
+          baseDay.breakfast.ingredients = [
+            `${scaleSpoons(3, carbMult)} yemek kaşığı (${scaleGrams(35, carbMult)} g) glutensiz yulaf ezmesi (su veya badem sütü ile pişmiş)`,
+            `1 yemek kaşığı öğütülmüş keten tohumu ve 1 çay kaşığı tarçın`,
+            `Yarım rendelenmiş yeşil elma ve ${walnutCount} tam adet ceviz`
+          ];
+          baseDay.breakfast.recipe = "Glutensiz yulafı badem sütü ve rendelenmiş yeşil elma ile 4–5 dakika pişirin. Ocaktan alıp keten tohumu, tarçın ve ceviz ekleyin.";
+          baseDay.breakfast.benefit = "Yulaftaki beta-glukan lifleri mikrobiyotayı kalıcı olarak besler ve bağırsak bariyerini güçlendirir.";
+        } else {
+          baseDay.breakfast.ingredients.push(`${breadSlices} dilim (${breadSlices * 30} g) karabuğday ekmeği`);
+        }
+        baseDay.lunch.ingredients.push(`${grainSpoons} yemek kaşığı haşlanmış karabuğday veya kinoa`);
+        baseDay.snack.title = "Ev Yapımı Koyun/Keçi Yoğurdu veya Kefir & Kuruyemiş";
+        baseDay.snack.ingredients = [
+          adaptSensitivityText(`1 küçük kase (${scaleGrams(150, proteinMult)} g) ev yapımı koyun/keçi yoğurdu veya 1 su bardağı ev yapımı kefir`),
+          `1 çay kaşığı çörek otu ve ${almondCount} adet çiğ badem`
+        ];
+        baseDay.snack.benefit = "4. haftada bağırsak duvarı onarıldığı için fermente keçi/koyun ürünleri zengin probiyotik çeşitliliği sağlar.";
+      }
+
+      // Çocuk, Hamile ve Emziren profiller için 1. ve 2. hafta güvenli karbonhidrat eklentisi
+      ["breakfast", "lunch", "snack", "dinner"].forEach((slot) => {
+        const safetyCarb = getSafetyCarbAddition(week, slot, carbMult);
+        if (safetyCarb) {
+          baseDay[slot].ingredients.push(safetyCarb);
+          baseDay[slot].baseCal += 95;
+        }
+        baseDay[slot].ingredients = baseDay[slot].ingredients.map(adaptSensitivityText);
+        baseDay[slot].scaledCal = Math.round(baseDay[slot].baseCal * metrics.multiplier);
+      });
+
+      return baseDay;
+    }
+
+    // =========================================================================
+    // 3. ARAYÜZ GÜNCELLEME VE RENDER FONKSİYONLARI
+    // =========================================================================
+    function renderDashboard() {
+      const metrics = calculateProfileMetrics();
+      const presetInfo = PROFILE_PRESETS[state.profileType];
+
+      document.getElementById("statCalories").textContent = `${metrics.targetCalories.toLocaleString("tr-TR")} kcal`;
+      document.getElementById("statBmrText").textContent = `Bazal Metabolizma: ${metrics.bmr.toLocaleString("tr-TR")} kcal`;
+      document.getElementById("statMultiplier").textContent = `${metrics.multiplier.toFixed(2)}x Porsiyon`;
+      document.getElementById("statProfileLabel").textContent = `${presetInfo.label} (${state.weight} kg)`;
+      document.getElementById("statProtein").textContent = `${metrics.dailyProteinGrams} g / gün`;
+      document.getElementById("statMeatPortion").textContent = `Öğün başı ~${scaleGrams(145, metrics.proteinMult)}g et/balık`;
+      document.getElementById("statFatVeg").textContent = `${metrics.dailyFatGrams} g Yağ`;
+      document.getElementById("statOilPortion").textContent = `Öğün başı ${scaleSpoons(1.5, metrics.fatMult)} yk zeytinyağı`;
+      document.getElementById("statWater").textContent = `${metrics.waterLiters} Litre Su`;
+      document.getElementById("statBrothPortion").textContent = `Günde ${metrics.brothMl} ml kemik suyu`;
+
+      // İlerleme istatistiği
+      const completedCount = Object.values(state.completedMeals).filter(Boolean).length;
+      const pct = Math.round((completedCount / 112) * 100);
+      document.getElementById("statProgress").textContent = `${completedCount} / 112 Öğün`;
+      document.getElementById("statProgressPct").textContent = `%${pct} Tamamlandı`;
+
+      // Gebelik trimester seçicisi görünürlüğü
+      const trimesterWrapper = document.getElementById("trimesterWrapper");
+      if (state.profileType === "pregnant") {
+        trimesterWrapper.classList.remove("hidden");
+      } else {
+        trimesterWrapper.classList.add("hidden");
+      }
+
+      // Profile özel klinik uyarı kutusu
+      const bannerIcon = document.getElementById("profileSafetyIcon");
+      const bannerText = document.getElementById("profileSafetyText");
+
+      if (state.profileType === "pregnant") {
+        bannerIcon.textContent = "🤰";
+        bannerText.innerHTML = `
+          <div class="font-bold text-amber-900">Hamilelik profili — güvenlik notu (${state.trimester}. trimester):</div>
+          <p>Gebelikte katı ketojenik/sıfır karbonhidrat diyeti ve agresif Candida detoksu (Die-Off) önerilmez. Bu nedenle yazılım <strong>1. ve 2. haftada dahi</strong> öğünlerinize bebeğin gelişimi için güvenli porsiyonda <strong>karabuğday ekmeği ve kinoa</strong> eklemiştir. Ayrıca rahim kasılmalarını uyarabilecek <strong>kekik çayı otomatik olarak ıhlamur/papatya ile değiştirilmiş</strong>, yumurta ve etlerin <strong>tam pişmiş</strong> tüketilmesi notu eklenmiştir.</p>
+        `;
+      } else if (state.profileType === "child") {
+        bannerIcon.textContent = "🧒";
+        bannerText.innerHTML = `
+          <div class="font-bold text-[#1B4D3E]">Çocuk / ergen profili (${state.age} yaş, ${state.weight} kg):</div>
+          <p>Çocuklarda büyüme ve tiroid fonksiyonlarını korumak için 1. ve 2. haftada sıfır karbonhidrat uygulanmaz; kahvaltı ve öğle yemeklerine otomatik olarak <strong>karabuğday ekmeği ve kinoa</strong> eklenmiştir. Porsiyonlar çocuğunuzun kilosuna göre (<strong>${metrics.multiplier.toFixed(2)}x</strong>) ölçeklenmiş ve kafeinli/keskin çaylar <strong>ıhlamur/elma-tarçın</strong> ile değiştirilmiştir.</p>
+        `;
+      } else if (state.profileType === "breastfeeding") {
+        bannerIcon.textContent = "🤱";
+        bannerText.innerHTML = `
+          <div class="font-bold text-[#1B4D3E]">Emziren Anne Süt Koruyucu Mod Aktif (+450 kcal):</div>
+          <p>Anne sütünün azalmaması için günlük enerjiye +450 kcal, su hedefinize +700 ml eklenmiştir. İlk 2 haftada süt verimini korumak için öğünlere <strong>güvenli kompleks karbonhidrat (karabuğday/kinoa)</strong> dahil edilmiş; bebeğinizde gaz oluşmaması için yemeklere <strong>kimyon ve rezene</strong> vurgusu eklenmiştir.</p>
+        `;
+      } else if (state.profileType === "male") {
+        bannerIcon.textContent = "👨";
+        bannerText.innerHTML = `
+          <div class="font-bold text-[#1B4D3E]">Yetişkin Erkek profili (${metrics.multiplier.toFixed(2)}x porsiyon ölçeği):</div>
+          <p>Protein içeren öğünler için mevcut tariflerdeki balık/hindi/kuzu porsiyonları <strong>~${scaleGrams(145, metrics.proteinMult)} grama</strong>, kahvaltı yumurtası <strong>3 adede</strong> ve sağlıklı yağ/kuruyemiş porsiyonları <strong>${metrics.multiplier.toFixed(2)} katına</strong> ölçeklenmiştir.</p>
+        `;
+      } else {
+        bannerIcon.textContent = "👩";
+        bannerText.innerHTML = `
+          <div class="font-bold text-[#1B4D3E]">Yetişkin Kadın Standart Onarım Protokolü Aktif (${metrics.multiplier.toFixed(2)}x):</div>
+          <p>Profiliniz için hesaplanan enerji ve protein değerleri yaklaşık tahmindir; mevcut tariflerin gerçek besin değerleriyle doğrulanmış değildir. Bu ekran tıbbi tedavi veya kişisel diyetisyen değerlendirmesi yerine geçmez.</p>
+        `;
+      }
+    }
+
+    // Şeffaf enerji kontrolü: tariflerdeki mevcut baz kcal değerleri ve porsiyon çarpanı kullanılır.
+    // Bunlar laboratuvar/marka bazlı besin analizi değildir; gerçek hedef uyumu ayrıca kontrol edilir.
+    function calculateMenuEnergySummary(week) {
+      const metrics = calculateProfileMetrics();
+      const dayTotals = [];
+      for (let day = 0; day < 7; day++) {
+        const meals = buildMealData(Number(week), day, metrics);
+        const total = ["breakfast", "lunch", "snack", "dinner"].reduce((sum, slot) => sum + Number(meals[slot]?.scaledCal || 0), 0);
+        dayTotals.push(total);
+      }
+      const average = Math.round(dayTotals.reduce((a,b)=>a+b,0) / Math.max(1, dayTotals.length));
+      const difference = average - metrics.targetCalories;
+      const percent = metrics.targetCalories ? Math.round((difference / metrics.targetCalories) * 100) : 0;
+      return { average, target: metrics.targetCalories, difference, percent, dayTotals };
+    }
+
+    function renderNutritionBalancePanel() {
+      const panel = document.getElementById("nutritionBalancePanel");
+      if (!panel) return;
+      const summary = calculateMenuEnergySummary(state.activeWeek);
+      const sign = summary.difference > 0 ? "+" : "";
+      const outside = Math.abs(summary.percent) > 10;
+      panel.className = `rounded-xl border p-3.5 text-xs sm:text-sm ${outside ? "border-amber-300 bg-amber-50" : "border-blue-200 bg-blue-50/70"}`;
+      panel.innerHTML = `<div class="font-bold mb-1">📊 Menü–hedef enerji kontrolü (yaklaşık)</div>
+        <div>Günlük hedef: <strong>${summary.target.toLocaleString("tr-TR")} kcal</strong> · Seçili haftanın menü ortalaması: <strong>${summary.average.toLocaleString("tr-TR")} kcal/gün</strong></div>
+        <div>Fark: <strong>${sign}${summary.difference.toLocaleString("tr-TR")} kcal (${sign}${summary.percent}%)</strong></div>
+        <p class="mt-1">${outside ? "⚠️ Menü ortalaması hedefin %10'dan fazla dışında. Porsiyonların/öğünlerin diyetisyen veya beslenme uzmanıyla yeniden düzenlenmesi gerekir; hedefin karşılandığı varsayılmamalıdır." : "Bu haftanın tahmini enerji ortalaması hedefe yakın görünüyor; yine de gerçek değerler marka, gramaj ve pişirme yöntemine göre değişebilir."}</p>
+        <p class="mt-1 text-[11px] opacity-80">Not: Bu kontrol mevcut tariflerdeki yaklaşık kcal etiketlerini toplar; malzeme bazlı tam besin analizi veya klinik diyet reçetesi değildir.</p>`;
+    }
+
+    function renderWeeklyMenu() {
+      const metrics = calculateProfileMetrics();
+      renderNutritionBalancePanel();
+      const weekInfo = WEEK_DESCRIPTIONS[state.activeWeek];
+
+      document.getElementById("weekPhaseDescription").innerHTML = `
+        <div class="font-bold text-[#1B4D3E] mb-1">${weekInfo.title}</div>
+        <p>${weekInfo.desc}</p>
+      `;
+
+      const grid = document.getElementById("weeklyMealGrid");
+      grid.innerHTML = "";
+
+      const slots = [
+        { key: "breakfast", label: "🌅 Kahvaltı", badgeClass: "bg-amber-100 text-amber-900" },
+        { key: "lunch", label: "☀️ Öğle Yemeği", badgeClass: "bg-emerald-100 text-[#1B4D3E]" },
+        { key: "snack", label: "🍵 Ara Öğün", badgeClass: "bg-stone-200 text-stone-800" },
+        { key: "dinner", label: "🌙 Akşam Yemeği", badgeClass: "bg-indigo-100 text-indigo-900" }
+      ];
+
+      DAYS_TR.forEach((dayName, dayIdx) => {
+        if (state.activeDayFilter !== "all" && Number(state.activeDayFilter) !== dayIdx) {
+          return;
+        }
+
+        const dayMeals = buildMealData(state.activeWeek, dayIdx, metrics);
+        const dayTotalCal = slots.reduce((acc, s) => acc + dayMeals[s.key].scaledCal, 0);
+
+        const dayCard = document.createElement("div");
+        dayCard.className = "bg-white rounded-2xl shadow-sm border border-stone-200/80 overflow-hidden print-shadow-none";
+
+        let mealsHtml = "";
+        slots.forEach((slot) => {
+          const meal = dayMeals[slot.key];
+          const mealId = `w${state.activeWeek}_d${dayIdx}_${slot.key}`;
+          const isDone = Boolean(state.completedMeals[mealId]);
+
+          const ingPreview = meal.ingredients
+            .map((ing) => `<li class="flex items-start gap-1.5"><span class="text-emerald-700 font-bold">•</span><span>${ing}</span></li>`)
+            .join("");
+
+          const allergenTerms = (state.allergens || "").split(",").map(x => x.trim().toLocaleLowerCase("tr-TR")).filter(Boolean);
+          const allergenMatches = allergenTerms.filter(term => meal.ingredients.join(" ").toLocaleLowerCase("tr-TR").includes(term));
+          mealsHtml += `
+            <div class="p-4 flex flex-col justify-between border-b sm:border-b-0 sm:border-r last:border-r-0 border-stone-100 transition ${isDone ? "bg-emerald-50/40" : "hover:bg-stone-50/70"}">
+              ${allergenMatches.length ? `<div class="mb-2 rounded-lg bg-red-100 text-red-900 p-2 text-xs font-semibold">⚠️ Kaçınılacak içerik eşleşmesi: ${allergenMatches.join(", ")}. Bu tarifi güvenli kabul etmeyin.</div>` : ""}
+              <div>
+                <div class="flex items-center justify-between gap-2 mb-2">
+                  <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-md ${slot.badgeClass}">${slot.label}</span>
+                  <span class="text-[11px] font-semibold text-stone-500">~${meal.scaledCal} kcal</span>
+                </div>
+                <h4 class="font-bold text-sm text-stone-900 mb-2 ${isDone ? "line-through text-stone-500" : ""}">${meal.title}</h4>
+                <ul class="text-xs text-stone-700 space-y-1 mb-3">
+                  ${ingPreview}
+                </ul>
+              </div>
+              <div class="pt-2 border-t border-stone-100 flex items-center justify-between gap-2 no-print">
+                <button type="button" data-open-recipe="${mealId}" class="text-xs font-semibold text-[#1B4D3E] hover:underline flex items-center gap-1">
+                  <span>📖</span><span>Tarif &amp; Porsiyon Detayı</span>
+                </button>
+                <label class="inline-flex items-center gap-1.5 cursor-pointer text-xs font-medium text-stone-600 select-none">
+                  <input type="checkbox" data-toggle-meal="${mealId}" ${isDone ? "checked" : ""} class="rounded text-[#1B4D3E] focus:ring-[#1B4D3E] w-4 h-4">
+                  <span>${isDone ? "Tamamlandı" : "Uyguladım"}</span>
+                </label>
+              </div>
+            </div>
+          `;
+        });
+
+        dayCard.innerHTML = `
+          <div class="bg-stone-100/80 px-4 sm:px-5 py-2.5 border-b border-stone-200/80 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="font-serif-title font-bold text-sm sm:text-base text-[#1B4D3E]">${dayName}</span>
+              <span class="text-xs text-stone-500 font-medium">(${state.activeWeek}. Hafta)</span>
+            </div>
+            <div class="text-xs font-semibold text-stone-700">
+              Günlük Toplam: <span class="text-[#1B4D3E] font-bold">~${dayTotalCal.toLocaleString("tr-TR")} kcal</span>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0">
+            ${mealsHtml}
+          </div>
+        `;
+
+        grid.appendChild(dayCard);
+      });
+    }
+
+    function renderPortionGuide() {
+      const metrics = calculateProfileMetrics();
+      const { proteinMult, vegMult, fatMult, carbMult, brothMl } = metrics;
+
+      const rows = [
+        {
+          group: "🐟 Balık (Somon, Sardalya, Levrek)",
+          base: "150 g (Çiğ ağırlık)",
+          personal: `${scaleGrams(150, proteinMult)} g`,
+          hand: `Yaklaşık ${scaleCount(1, proteinMult, true)} el ayası büyüklüğünde fileto`,
+          rule: "Kızartma yapılmaz; fırında, buharda veya kendi yağında pişirilir."
+        },
+        {
+          group: "🍗 Kümes & Kırmızı Et (Hindi, Tavuk, Kuzu)",
+          base: "140 g (Kuşbaşı/Bonfile) veya 4 Köfte",
+          personal: `${scaleGrams(140, proteinMult)} g veya ${scaleCount(4, proteinMult)} adet köfte`,
+          hand: `${scaleCount(4, proteinMult)} adet yumurta büyüklüğünde köfte / avuç içi`,
+          rule: "Köfteye ekmek içi/galeta unu konulmaz; 3. haftadan sonra karabuğday unu eklenebilir."
+        },
+        {
+          group: "🥚 Yumurta (Organik / Gezen Tavuk)",
+          base: "2 adet",
+          personal: `${state.profileType === "child" ? 1 : (state.profileType === "male" ? 3 : scaleCount(2, proteinMult))} adet`,
+          hand: state.profileType === "pregnant" ? "Sarısı ve beyazı tam pişmiş" : "Haşlanmış, omlet veya sebze üstü kapama",
+          rule: "Zerdeçal, kimyon ve çörek otu ile birlikte pişirilmesi sindirimi kolaylaştırır."
+        },
+        {
+          group: "🥦 Nişastasız Sebzeler (Brokoli, Kabak, Pazı, Pırasa)",
+          base: "200 g (1 orta tabak)",
+          personal: `${scaleGrams(200, vegMult)} g`,
+          hand: `${scaleCount(2, vegMult, true)} su bardağı doğranmış sebze`,
+          rule: "İlk haftalarda şişkinliği önlemek için çiğ yerine buharda, fırında veya zeytinyağlı pişmiş tüketilir."
+        },
+        {
+          group: "🫒 Sızma Zeytinyağı & Hindistan Cevizi Yağı",
+          base: "Öğün başı 1.5 yemek kaşığı zeytinyağı",
+          personal: `${scaleSpoons(1.5, fatMult)} yemek kaşığı zeytinyağı + günde 1-2 tk hindistan cevizi yağı`,
+          hand: "1 yemek kaşığı = ~10 g yağ",
+          rule: "Zeytinyağının yarısını pişirirken, yarısını yemek piştikten sonra çiğ olarak ekleyin."
+        },
+        {
+          group: "🥑 Kuruyemiş & Avokado",
+          base: "10 çiğ badem veya 3 tam ceviz + 1/2 avokado",
+          personal: `${scaleCount(10, fatMult)} badem / ${scaleCount(3, fatMult)} ceviz / ${scaleGrams(25, fatMult)} g kabak çekirdeği`,
+          hand: "1 kapalı avuç içi kadar kavrulmamış çiğ kuruyemiş",
+          rule: "Yer fıstığı ve kaju küf (mikotoksin) riski nedeniyle 1 ay boyunca tüketilmez."
+        },
+        {
+          group: "🌾 Glutensiz Tahıllar (Karabuğday, Kinoa, Yulaf)",
+          base: "İlk 2 hafta 0 g; 3-4. hafta 4 yemek kaşığı",
+          personal: (state.profileType === "pregnant" || state.profileType === "child" || state.profileType === "breastfeeding")
+            ? `Tüm haftalarda öğün başı ${scaleSpoons(4, carbMult)} yemek kaşığı (Güvenli Mod)`
+            : `1-2. Hafta: 0 g | 3-4. Hafta: ${scaleSpoons(4, carbMult)} yemek kaşığı (${Math.round(scaleSpoons(4, carbMult) * 25)} g)`,
+          hand: `Pişmiş halde yarım kase veya ${scaleCount(1, carbMult)} ince dilim karabuğday ekmeği`,
+          rule: "Pişirmeden önce soğuk suda bekletip yıkayarak fitik asidini azaltın."
+        },
+        {
+          group: "🍲 İlikli Kemik Suyu & Fermente Turşu",
+          base: "Günde 1 kase (250 ml) kemik suyu + 1-2 yk turşu",
+          personal: `Günde ${brothMl} ml kemik suyu + (2. haftadan itibaren) ${scaleSpoons(1.5, vegMult)} yk lahana turşusu`,
+          hand: "1 standart su bardağı / kase",
+          rule: "Turşu sirke ile değil, sadece kaya tuzu ile fermente edilmiş ev yapımı olmalıdır."
+        }
+      ];
+
+      const tbody = document.getElementById("portionGuideBody");
+      tbody.innerHTML = rows.map((r) => `
+        <tr class="hover:bg-stone-50">
+          <td class="py-3 px-3 font-semibold text-stone-900">${r.group}</td>
+          <td class="py-3 px-3 text-stone-600">${r.base}</td>
+          <td class="py-3 px-3 font-bold text-[#1B4D3E] bg-emerald-50/50">${r.personal}</td>
+          <td class="py-3 px-3 text-stone-700">${r.hand}</td>
+          <td class="py-3 px-3 text-stone-600">${r.rule}</td>
+        </tr>
+      `).join("");
+    }
+
+    function renderShoppingList() {
+      const metrics = calculateProfileMetrics();
+      const week = Number(state.shoppingWeek);
+      const presetLabel = PROFILE_PRESETS[state.profileType].label;
+      document.getElementById("shoppingListTitle").textContent = `🛒 ${week}. Hafta — Menüden Oluşturulan Alışveriş Listesi (${presetLabel})`;
+      const collected = [];
+      for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
+        const day = buildMealData(week, dayIndex, metrics);
+        ["breakfast", "lunch", "snack", "dinner"].forEach(slot => {
+          (day[slot]?.ingredients || []).forEach(raw => {
+            const text = String(raw).replace(/\s+/g, " ").trim();
+            if (text) collected.push(text);
+          });
+        });
+      }
+      const totals = new Map();
+      collected.forEach((line) => {
+        // Miktar ve birimi ayır; yalnızca aynı ürün ve aynı birim birleştirilir.
+        const m = line.match(/^([\d.,]+)\s*(g|kg|ml|l|adet|dilim|yemek kaşığı|tatlı kaşığı|çay kaşığı|su bardağı|kase|avuç|demet|baş|küçük avuç)\s+(.*)$/i);
+        if (m) {
+          const amount = Number(m[1].replace(",", "."));
+          const unit = m[2].toLocaleLowerCase("tr-TR");
+          const item = m[3].replace(/\([^)]*\)/g, "").replace(/\s+/g, " ").trim().toLocaleLowerCase("tr-TR");
+          const key = `${unit}|${item}`;
+          const old = totals.get(key);
+          if (old) old.amount += amount;
+          else totals.set(key, {amount, unit, item, originals: [line]});
+        } else {
+          const key = `line|${line.toLocaleLowerCase("tr-TR")}`;
+          const old = totals.get(key);
+          if (old) old.count += 1;
+          else totals.set(key, {line, count: 1, unit: "", item: "", originals: [line]});
+        }
+      });
+      const entries = Array.from(totals.entries()).map(([key, value]) => {
+        const label = value.line || `${Number(value.amount.toFixed(2)).toLocaleString("tr-TR")} ${value.unit} ${value.item}`;
+        return {key, label, count: value.count || 1};
+      });
+      const container = document.getElementById("shoppingCategoriesContainer");
+      container.innerHTML = `<div class="md:col-span-2 lg:col-span-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 mb-1">Liste, seçili haftanın tarif malzemelerinden otomatik oluşturulur. Farklı yazılmış ürün adları veya farklı ölçü birimleri her zaman birleştirilemeyebilir; alışverişten önce miktarları kontrol edin.</div>
+        <div class="rounded-xl border border-stone-200 p-4 bg-stone-50/50 md:col-span-2 lg:col-span-3">
+          <h3 class="font-bold text-sm text-[#1B4D3E] mb-3">🧺 Tariflerden çıkarılan malzemeler (${entries.length} satır)</h3>
+          <ul class="space-y-2 text-xs sm:text-sm text-stone-700">${entries.map((entry, idx) => {
+            const itemKey = `shop_w${week}_${idx}_${entry.key.replace(/[^a-z0-9]/gi, "").slice(0,24)}`;
+            const checked = Boolean(state.completedHabits[itemKey]);
+            return `<li><label class="flex items-start gap-2 cursor-pointer select-none"><input type="checkbox" data-shop-item="${itemKey}" ${checked ? "checked" : ""} class="mt-0.5 rounded text-[#1B4D3E]"><span class="${checked ? "line-through text-stone-400" : ""}">${entry.label}</span></label></li>`;
+          }).join("")}</ul>
+        </div>`;
+    }
+
+    function renderDailyHabits() {
+      const metrics = calculateProfileMetrics();
+      const habits = [
+        { id: "habit_water", label: "Gün içinde susuzluk ve kişisel ihtiyaca uygun su tüketimi" },
+        { id: "habit_variety", label: "Öğünlerde tolere ettiğim farklı sebze, meyve ve lif kaynaklarına yer verme" },
+        { id: "habit_meals", label: "Öğünlerimi ve porsiyonlarımı günlüğe kaydetme" },
+        { id: "habit_symptoms", label: "Besinlerle ilişkili belirti veya hassasiyetleri not etme" },
+        { id: "habit_sleep", label: "Düzenli uyku ve günlük hareket için kendime uygun rutin oluşturma" }
+      ];
+
+      const container = document.getElementById("dailyHabitsContainer");
+      container.innerHTML = habits.map((h) => {
+        const now = new Date();
+        const localDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
+        const dailyKey = `${localDate}_${h.id}`;
+        const done = Boolean(state.completedHabits[dailyKey]);
+        return `
+          <label class="flex items-start gap-3 p-3 rounded-xl border ${done ? "bg-emerald-50 border-emerald-200" : "bg-stone-50 border-stone-200"} cursor-pointer transition">
+            <input type="checkbox" data-habit-id="${dailyKey}" ${done ? "checked" : ""} class="mt-0.5 w-4 h-4 rounded text-[#1B4D3E] focus:ring-[#1B4D3E]">
+            <span class="text-xs sm:text-sm ${done ? "line-through text-stone-500" : "text-stone-800 font-medium"}">${h.label}</span>
+          </label>
+        `;
+      }).join("");
+    }
+
+    function openRecipeModal(mealId) {
+      // mealId format: w1_d0_breakfast
+      const parts = mealId.split("_");
+      const week = Number(parts[0].replace("w", ""));
+      const dayIdx = Number(parts[1].replace("d", ""));
+      const slotKey = parts[2];
+
+      const metrics = calculateProfileMetrics();
+      const dayMeals = buildMealData(week, dayIdx, metrics);
+      const meal = dayMeals[slotKey];
+
+      const slotNames = {
+        breakfast: "Kahvaltı",
+        lunch: "Öğle Yemeği",
+        snack: "Ara Öğün",
+        dinner: "Akşam Yemeği"
+      };
+
+      state.currentModalMealKey = mealId;
+
+      document.getElementById("modalMealBadge").textContent = `${week}. Hafta • ${DAYS_TR[dayIdx]} • ${slotNames[slotKey]}`;
+      document.getElementById("modalMealTitle").textContent = meal.title;
+      document.getElementById("modalProfileSummary").textContent =
+        `${PROFILE_PRESETS[state.profileType].label} (${state.weight} kg, ${metrics.multiplier.toFixed(2)}x Porsiyon)`;
+      document.getElementById("modalCalorieSummary").textContent = `~${meal.scaledCal} kcal (tahmini)`;
+
+      document.getElementById("modalIngredientsList").innerHTML = meal.ingredients
+        .map((ing) => `<li class="flex items-start gap-2"><span class="text-emerald-700 font-bold">✓</span><span>${ing}</span></li>`)
+        .join("");
+
+      document.getElementById("modalRecipeSteps").innerHTML = `<p>${meal.recipe}</p>`;
+      document.getElementById("modalFunctionalBenefit").textContent = meal.benefit;
+
+      const isDone = Boolean(state.completedMeals[mealId]);
+      const toggleBtn = document.getElementById("btnToggleCompleteFromModal");
+      toggleBtn.textContent = isDone ? "✓ Tamamlandı İşaretini Kaldır" : "✓ Bu Öğünü Uyguladım Olarak İşaretle";
+
+      document.getElementById("recipeModal").classList.remove("hidden");
+    }
+
+    function renderAll() {
+      const profileInputs = { inputAge: state.age, inputHeight: state.height, inputWeight: state.weight, selectActivity: state.activity, selectGoal: state.goal, selectTrimester: state.trimester, selectEggNote: state.sensitivityMode };
+      Object.entries(profileInputs).forEach(([id, value]) => { const el = document.getElementById(id); if (el && value !== undefined) el.value = value; });
+      const goalEl = document.getElementById("selectGoal");
+      if (["child", "pregnant", "breastfeeding"].includes(state.profileType)) { const loseOption = goalEl.querySelector('option[value="lose"]'); if (loseOption) loseOption.disabled = true; }
+      else { const loseOption = goalEl.querySelector('option[value="lose"]'); if (loseOption) loseOption.disabled = false; }
+      renderDashboard();
+      renderWeeklyMenu();
+      renderPortionGuide();
+      renderShoppingList();
+      renderDailyHabits();
+    }
+
+    // Geliştirme aşaması otomatik kontrolleri: kullanıcı verisini değiştirmez.
+    function runBeslenPlusSelfTests() {
+      const results = [];
+      const test = (name, fn) => { try { const ok = Boolean(fn()); results.push({ name, ok }); } catch (e) { results.push({ name, ok: false, error: String(e) }); } };
+      test("Profil enerji hesabı pozitif", () => calculateProfileMetrics().targetCalories > 0);
+      test("28 günlük menü üretiliyor", () => { const m = calculateProfileMetrics(); for (let w=1; w<=4; w++) for (let d=0; d<7; d++) { const day=buildMealData(w,d,m); if (!["breakfast","lunch","snack","dinner"].every(k => day[k] && Array.isArray(day[k].ingredients) && Number.isFinite(day[k].scaledCal))) return false; } return true; });
+      test("Çocuk profilinde kilo verme hedefi kalori kısıtlamaz", () => { const old={...state}; state.profileType="child"; state.goal="maintain"; const maintain=calculateProfileMetrics().targetCalories; state.goal="lose"; const lose=calculateProfileMetrics().targetCalories; Object.assign(state,old); return maintain === lose; });
+      test("Hamile/emziren profillerde kilo verme kısıtlaması yok", () => { const old={...state}; let ok=true; ["pregnant","breastfeeding"].forEach(type=>{state.profileType=type;state.goal="maintain";const maintain=calculateProfileMetrics().targetCalories;state.goal="lose";const lose=calculateProfileMetrics().targetCalories;if(maintain!==lose) ok=false;}); Object.assign(state,old); return ok; });
+      test("Dört profil grubunda 4 haftalık menü üretimi", () => { const old={...state}; let ok=true; ["female","male","child","pregnant","breastfeeding"].forEach(type=>{state.profileType=type;for(let w=1;w<=4;w++)for(let d=0;d<7;d++){const day=buildMealData(w,d,calculateProfileMetrics());if(!["breakfast","lunch","snack","dinner"].every(k=>day[k]&&day[k].ingredients.length&&day[k].scaledCal>0))ok=false;}}); Object.assign(state,old); return ok; });
+      test("Enerji kontrolü 7 günü kapsıyor", () => calculateMenuEnergySummary(1).dayTotals.length === 7);
+      const failed = results.filter(r => !r.ok);
+      window.BESLENPLUS_SELF_TESTS = results;
+      console.groupCollapsed(`[BeslenPlus Pro] Otomatik kontrol: ${results.length-failed.length}/${results.length} başarılı`);
+      results.forEach(r => (r.ok ? console.log : console.error)(`${r.ok ? "✓" : "✗"} ${r.name}`, r.error || ""));
+      console.groupEnd();
+      if (failed.length) console.warn("BeslenPlus Pro: bazı otomatik kontroller başarısız. window.BESLENPLUS_SELF_TESTS değişkeninden ayrıntılar görülebilir.");
+    }
+
+    // =========================================================================
+    // 4. OLAY DİNLEYİCİLERİ (EVENT LISTENERS)
+    // =========================================================================
+    document.addEventListener("DOMContentLoaded", () => {
+      loadSavedState();
+      renderAll();
+      runBeslenPlusSelfTests();
+
+      // Hızlı Profil Butonları
+      document.getElementById("profileCategoryButtons").addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-profile]");
+        if (!btn) return;
+        const profileKey = btn.getAttribute("data-profile");
+        const preset = PROFILE_PRESETS[profileKey];
+        if (!preset) return;
+
+        state.profileType = profileKey;
+        state.age = preset.age;
+        state.height = preset.height;
+        state.weight = preset.weight;
+        state.activity = Number(preset.activity);
+        state.goal = preset.goal;
+        state.trimester = Number(preset.trimester);
+        if (["child", "pregnant", "breastfeeding"].includes(profileKey) && state.goal === "lose") state.goal = "maintain";
+        saveState();
+
+        document.getElementById("inputAge").value = state.age;
+        document.getElementById("inputHeight").value = state.height;
+        document.getElementById("inputWeight").value = state.weight;
+        document.getElementById("selectActivity").value = String(state.activity);
+        document.getElementById("selectGoal").value = state.goal;
+        document.getElementById("selectTrimester").value = String(state.trimester);
+
+        document.querySelectorAll(".profile-preset-btn").forEach((b) => {
+          if (b.getAttribute("data-profile") === profileKey) {
+            b.className = "profile-preset-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold border transition flex items-center gap-1.5 bg-[#1B4D3E] text-white border-[#1B4D3E]";
+          } else {
+            b.className = "profile-preset-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold border transition flex items-center gap-1.5 bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100";
+          }
+        });
+
+        renderAll();
+      });
+
+      // Profil ve alerjen alanlarını kalıcı olarak sakla
+      const allergenInput = document.getElementById("inputAllergens");
+      allergenInput.value = state.allergens || "";
+      allergenInput.addEventListener("input", () => { state.allergens = allergenInput.value; saveState(); renderWeeklyMenu(); });
+
+      // Sayısal ve Seçim Girdileri
+      ["inputAge", "inputHeight", "inputWeight"].forEach((id) => {
+        document.getElementById(id).addEventListener("input", () => {
+          state.age = Math.max(5, Math.min(95, Number(document.getElementById("inputAge").value) || 30));
+          state.height = Math.max(90, Math.min(220, Number(document.getElementById("inputHeight").value) || 165));
+          state.weight = Math.max(15, Math.min(180, Number(document.getElementById("inputWeight").value) || 64));
+          saveState(); renderAll();
+        });
+      });
+
+      document.getElementById("selectActivity").addEventListener("change", (e) => {
+        state.activity = Number(e.target.value);
+        saveState(); renderAll();
+      });
+
+      document.getElementById("selectGoal").addEventListener("change", (e) => {
+        state.goal = e.target.value;
+        if (["child", "pregnant", "breastfeeding"].includes(state.profileType) && state.goal === "lose") state.goal = "maintain";
+        document.getElementById("selectGoal").value = state.goal;
+        saveState(); renderAll();
+      });
+
+      document.getElementById("selectTrimester").addEventListener("change", (e) => {
+        state.trimester = Number(e.target.value);
+        saveState(); renderAll();
+      });
+
+      document.getElementById("selectEggNote").addEventListener("change", (e) => {
+        state.sensitivityMode = e.target.value;
+        saveState(); renderAll();
+      });
+
+      // Ana Sekmeler
+      document.querySelectorAll(".main-tab-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const tab = btn.getAttribute("data-main-tab");
+          state.activeMainTab = tab;
+
+          document.querySelectorAll(".main-tab-btn").forEach((b) => {
+            if (b.getAttribute("data-main-tab") === tab) {
+              b.className = "main-tab-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition bg-[#1B4D3E] text-white shadow-sm";
+            } else {
+              b.className = "main-tab-btn px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition bg-white text-stone-700 border border-stone-200 hover:bg-stone-100";
+            }
+          });
+
+          ["menu", "portions", "shopping", "rules"].forEach((t) => {
+            const el = document.getElementById(`tabContent-${t}`);
+            if (t === tab) el.classList.remove("hidden");
+            else el.classList.add("hidden");
+          });
+        });
+      });
+
+      // Hafta Seçici Butonlar
+      document.getElementById("weekSelectorButtons").addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-week]");
+        if (!btn) return;
+        state.activeWeek = Number(btn.getAttribute("data-week"));
+
+        document.querySelectorAll(".week-tab-btn").forEach((b) => {
+          if (Number(b.getAttribute("data-week")) === state.activeWeek) {
+            b.className = "week-tab-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition bg-[#B85D3B] text-white";
+          } else {
+            b.className = "week-tab-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition bg-stone-100 text-stone-700 hover:bg-stone-200";
+          }
+        });
+
+        renderWeeklyMenu();
+      });
+
+      // Gün Filtresi
+      document.getElementById("selectDayFilter").addEventListener("change", (e) => {
+        state.activeDayFilter = e.target.value;
+        renderWeeklyMenu();
+      });
+
+      // Öğün Kartı Etkileşimleri (Tarif Açma & Tamamlama)
+      document.getElementById("weeklyMealGrid").addEventListener("click", (e) => {
+        const openBtn = e.target.closest("[data-open-recipe]");
+        if (openBtn) {
+          openRecipeModal(openBtn.getAttribute("data-open-recipe"));
+        }
+      });
+
+      document.getElementById("weeklyMealGrid").addEventListener("change", (e) => {
+        const checkbox = e.target.closest("[data-toggle-meal]");
+        if (checkbox) {
+          const mealId = checkbox.getAttribute("data-toggle-meal");
+          state.completedMeals[mealId] = checkbox.checked;
+          saveState();
+          renderDashboard();
+          renderWeeklyMenu();
+        }
+      });
+
+      // Alışveriş Haftası Seçimi & Kopyalama
+      document.getElementById("selectShoppingWeek").addEventListener("change", (e) => {
+        state.shoppingWeek = Number(e.target.value);
+        renderShoppingList();
+      });
+
+      document.getElementById("shoppingCategoriesContainer").addEventListener("change", (e) => {
+        const cb = e.target.closest("[data-shop-item]");
+        if (cb) {
+          state.completedHabits[cb.getAttribute("data-shop-item")] = cb.checked;
+          saveState();
+          renderShoppingList();
+        }
+      });
+
+      document.getElementById("btnCopyShopping").addEventListener("click", async () => {
+        const container = document.getElementById("shoppingCategoriesContainer");
+        const lines = [`BeslenPlus Pro — ${state.shoppingWeek}. Hafta alışveriş listesi`, ...Array.from(container.querySelectorAll("li")).map(li => `${li.querySelector("input")?.checked ? "[x]" : "[ ]"} ${li.innerText.trim()}`)];
+        const textToCopy = lines.join("\n");
+        const banner = document.getElementById("copyFeedbackBanner");
+        try {
+          if (navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(textToCopy);
+          else {
+            const ta = document.createElement("textarea"); ta.value = textToCopy; ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta); ta.focus(); ta.select();
+            const ok = document.execCommand("copy"); ta.remove(); if (!ok) throw new Error("Kopyalama desteklenmiyor");
+          }
+          banner.textContent = "✓ Alışveriş listesi panoya kopyalandı.";
+        } catch (err) {
+          banner.textContent = "Kopyalama engellendi. Listeyi seçip elle kopyalayabilirsiniz.";
+        }
+        banner.classList.remove("hidden"); setTimeout(() => banner.classList.add("hidden"), 4000);
+      });
+
+      // Günlük Alışkanlıklar
+      document.getElementById("dailyHabitsContainer").addEventListener("change", (e) => {
+        const cb = e.target.closest("[data-habit-id]");
+        if (cb) {
+          state.completedHabits[cb.getAttribute("data-habit-id")] = cb.checked;
+          saveState();
+          renderDailyHabits();
+        }
+      });
+
+      // Tarif Modal Kapatma ve İşaretleme
+      const closeModal = () => document.getElementById("recipeModal").classList.add("hidden");
+      document.getElementById("btnCloseModal").addEventListener("click", closeModal);
+      document.getElementById("btnCloseModalBottom").addEventListener("click", closeModal);
+      document.getElementById("recipeModal").addEventListener("click", (e) => {
+        if (e.target.id === "recipeModal") closeModal();
+      });
+
+      document.getElementById("btnToggleCompleteFromModal").addEventListener("click", () => {
+        if (!state.currentModalMealKey) return;
+        state.completedMeals[state.currentModalMealKey] = !state.completedMeals[state.currentModalMealKey];
+        saveState();
+        renderDashboard();
+        renderWeeklyMenu();
+        closeModal();
+      });
+
+      // Yazdırma ve Sıfırlama
+      document.getElementById("btnPrintPlan").addEventListener("click", () => {
+        const active = state.activeMainTab || "menu";
+        document.body.classList.remove("print-menu", "print-portions", "print-shopping", "print-rules");
+        document.body.classList.add(`print-${active}`);
+        window.print();
+      });
+      window.addEventListener("afterprint", () => document.body.classList.remove("print-menu", "print-portions", "print-shopping", "print-rules"));
+
+      document.getElementById("btnExportData").addEventListener("click", () => {
+        const payload = { app: "BeslenPlus Pro", schemaVersion: 2, exportedAt: new Date().toISOString(), state };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
+        const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `beslenplus-yedek-${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(url);
+      });
+      document.getElementById("btnImportData").addEventListener("click", () => document.getElementById("importDataFile").click());
+      document.getElementById("importDataFile").addEventListener("change", async (e) => {
+        const file = e.target.files?.[0]; if (!file) return;
+        try {
+          const data = JSON.parse(await file.text()); const incoming = data.state || data;
+          if (!incoming || typeof incoming !== "object" || !incoming.completedMeals || !incoming.completedHabits) throw new Error("Yedek dosyası biçimi tanınmadı.");
+          if (!confirm("Mevcut profil ve takip verileri yedek dosyasındaki verilerle değiştirilsin mi?")) return;
+          Object.assign(state, incoming); saveState(); location.reload();
+        } catch (err) { alert("Yedek yüklenemedi: " + err.message); }
+        finally { e.target.value = ""; }
+      });
+
+      document.getElementById("btnResetProgress").addEventListener("click", () => {
+        document.getElementById("resetConfirmModal").classList.remove("hidden");
+      });
+
+      document.getElementById("btnCancelReset").addEventListener("click", () => {
+        document.getElementById("resetConfirmModal").classList.add("hidden");
+      });
+
+      document.getElementById("btnConfirmReset").addEventListener("click", () => {
+        state.completedMeals = {};
+        state.completedHabits = {};
+        saveState();
+        renderAll();
+        document.getElementById("resetConfirmModal").classList.add("hidden");
+      });
+    });
+  </script>
+</body>
+</html>
