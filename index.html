@@ -96,6 +96,17 @@
         </div>
       </div>
 
+      <!-- Aile Bireyleri -->
+      <div class="mt-4 rounded-xl border border-stone-200 bg-stone-50/60 p-3 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2.5 no-print">
+        <span class="text-xs sm:text-sm font-bold text-[#1B4D3E] whitespace-nowrap">👨‍👩‍👧 Aile Bireyleri:</span>
+        <div id="memberChips" class="flex flex-wrap gap-2"></div>
+        <button id="btnAddMember" type="button" class="px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold border border-dashed border-[#1B4D3E] text-[#1B4D3E] hover:bg-emerald-50 transition cursor-pointer">➕ Kişi Ekle</button>
+        <div class="flex items-center gap-2 sm:ml-auto">
+          <input id="inputMemberName" type="text" maxlength="30" placeholder="Seçili kişinin adı" aria-label="Seçili kişinin adı" class="w-40 rounded-xl border border-stone-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1B4D3E]">
+          <button id="btnDeleteMember" type="button" class="px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition cursor-pointer">🗑️ Sil</button>
+        </div>
+      </div>
+
       <!-- Profil Girdi Formu -->
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5 mt-4 no-print">
         <div>
@@ -522,11 +533,156 @@
     }
 
     function saveState() {
+      try { syncActiveMember(); } catch (e) {}
       try {
         localStorage.setItem("leakyGut_completedMeals_v1", JSON.stringify(state.completedMeals));
         localStorage.setItem("leakyGut_completedHabits_v1", JSON.stringify(state.completedHabits));
         localStorage.setItem("beslenPlusPro_state_v2", JSON.stringify(state));
       } catch (e) {}
+    }
+
+    // =========================================================================
+    // AİLE BİREYLERİ: her kişinin kendi profili, alerjenleri ve takibi vardır
+    // =========================================================================
+    const MEMBER_FIELDS = ["profileType", "age", "height", "weight", "activity", "goal", "trimester", "sensitivityMode", "allergens", "profileName", "completedMeals", "completedHabits"];
+    const escHtml = (t) => String(t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+    function ensureMembers() {
+      if (!Array.isArray(state.members) || !state.members.length) {
+        const first = { id: "m" + Date.now().toString(36) };
+        MEMBER_FIELDS.forEach((k) => { first[k] = state[k]; });
+        state.members = [first];
+        state.activeMemberId = first.id;
+      }
+      if (!state.members.some((m) => m.id === state.activeMemberId)) state.activeMemberId = state.members[0].id;
+    }
+
+    function syncActiveMember() {
+      const m = (state.members || []).find((x) => x.id === state.activeMemberId);
+      if (m) MEMBER_FIELDS.forEach((k) => { m[k] = state[k]; });
+    }
+
+    function switchMember(id) {
+      syncActiveMember();
+      const m = state.members.find((x) => x.id === id);
+      if (!m) return;
+      state.activeMemberId = id;
+      MEMBER_FIELDS.forEach((k) => { if (m[k] !== undefined) state[k] = m[k]; });
+      state.completedMeals = state.completedMeals || {};
+      state.completedHabits = state.completedHabits || {};
+      saveState();
+      renderAll();
+    }
+
+    function addMember() {
+      syncActiveMember();
+      const m = { id: "m" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), profileName: "Kişi " + (state.members.length + 1), profileType: "female", age: 32, height: 165, weight: 64, activity: 1.375, goal: "maintain", trimester: 2, sensitivityMode: "standard", allergens: "", completedMeals: {}, completedHabits: {} };
+      state.members.push(m);
+      switchMember(m.id);
+      const n = document.getElementById("inputMemberName");
+      if (n) { n.focus(); n.select(); }
+    }
+
+    function deleteActiveMember() {
+      if (state.members.length < 2) return;
+      const m = state.members.find((x) => x.id === state.activeMemberId);
+      if (!confirm(`"${m ? m.profileName : "Kişi"}" silinsin mi? Bu kişiye ait tüm kayıtlar kaybolur.`)) return;
+      state.members = state.members.filter((x) => x.id !== state.activeMemberId);
+      state.activeMemberId = null;
+      switchMember(state.members[0].id);
+    }
+
+    function renderMembers() {
+      const box = document.getElementById("memberChips");
+      if (!box || !Array.isArray(state.members)) return;
+      syncActiveMember();
+      box.innerHTML = state.members.map((m) => `<button type="button" data-member="${m.id}" class="px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold border transition cursor-pointer ${m.id === state.activeMemberId ? "bg-[#1B4D3E] text-white border-[#1B4D3E]" : "bg-white text-stone-700 border-stone-300 hover:bg-stone-100"}">${escHtml(m.profileName || "Kişi")}</button>`).join("");
+      const nameEl = document.getElementById("inputMemberName");
+      if (nameEl && document.activeElement !== nameEl) nameEl.value = state.profileName || "";
+      const del = document.getElementById("btnDeleteMember");
+      if (del) { del.disabled = state.members.length < 2; del.classList.toggle("opacity-40", del.disabled); }
+      const al = document.getElementById("inputAllergens");
+      if (al && document.activeElement !== al) al.value = state.allergens || "";
+      document.querySelectorAll(".profile-preset-btn").forEach((b) => {
+        const on = b.getAttribute("data-profile") === state.profileType;
+        b.className = "profile-preset-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold border transition flex items-center gap-1.5 cursor-pointer " + (on ? "bg-[#1B4D3E] text-white border-[#1B4D3E]" : "bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100");
+      });
+    }
+
+    // =========================================================================
+    // ALIŞVERİŞ: aynı ürün farklı yazılsa da tek satırda toplanır
+    // =========================================================================
+    const SHOP_UNITS = "tam adet|küçük avuç|ince dilim|orta boy|küçük kase|yemek kaşığı|tatlı kaşığı|çay kaşığı|su bardağı|fincan|adet|dilim|kase|avuç|demet|diş|dal|çimdik|baş|kg|ml|g|l";
+    const SPOON_TO_TSP = { "çay kaşığı": 1, "tatlı kaşığı": 2, "yemek kaşığı": 3 };
+    const SHOP_ITEMS = [
+      [/beyaz etli balık/, "Beyaz etli balık (levrek/mezgit)"], [/çorba/, null], [/yumurta/, "Yumurta"],
+      [/hindistan cevizi unu/, "Hindistan cevizi unu"], [/hindistan cevizi yağı/, "Hindistan cevizi yağı"],
+      [/zeytinyağı/, "Zeytinyağı"], [/zeytin(?!yağ)/, "Zeytin"], [/enginar/, "Enginar çanağı"],
+      [/salatalık söğüş/, "Salatalık söğüş"], [/salatalık/, "Salatalık"], [/avokado/, "Avokado"],
+      [/roka salatası/, "Roka salatası"], [/roka/, "Roka"], [/dereotu/, "Dereotu"], [/maydanoz/, "Maydanoz"],
+      [/papatya/, "Papatya çayı"], [/kekik veya rezene/, "Kekik / rezene çayı"], [/yeşil çay/, "Yeşil çay / rezene çayı"], [/zencefil-limon/, "Zencefil-limon çayı"],
+      [/limon/, "Limon"], [/sarımsak/, "Sarımsak"], [/kekik/, "Kekik"], [/zerdeçal/, "Zerdeçal"], [/karabiber/, "Karabiber"],
+      [/zencefil/, "Zencefil"], [/kimyon|muskat/, "Kimyon / muskat"], [/fesleğen/, "Taze fesleğen / nane"], [/defne/, "Defne yaprağı"],
+      [/soğan/, "Soğan"], [/tarçın/, "Tarçın"], [/tahin/, "Tahin"], [/çörek otu/, "Çörek otu"],
+      [/badem sütü/, "Badem sütü"], [/badem/, "Çiğ badem"], [/ceviz/, "Ceviz"], [/fındık/, "Çiğ fındık"], [/kabak çekirdeği/, "Kabak çekirdeği"],
+      [/chia/, "Chia tohumu"], [/keten/, "Keten tohumu"], [/yulaf/, "Glutensiz yulaf ezmesi"], [/ekmeği/, "Karabuğday ekmeği"], [/kinoa|karabuğday/, "Kinoa / karabuğday"],
+      [/lahana turşusu/, "Ev yapımı lahana turşusu"], [/yoğurd|yoğurt|kefir/, "Yoğurt / kefir"], [/yaban mersini/, "Yaban mersini"], [/elma/, "Elma"],
+      [/kemik suyu/, "İlikli kemik suyu"], [/somon/, "Somon fileto"], [/sardalya/, "Sardalya"], [/çipura|levrek/, "Çipura / levrek"],
+      [/tavuk/, "Tavuk"], [/hindi/, "Hindi"], [/incik/, "Kuzu incik"], [/kıyma/, "Dana/kuzu kıyma"], [/kuzu/, "Kuzu eti"], [/köfte/, "Köfte"],
+      [/brüksel/, "Brüksel lahanası"], [/kereviz sapı/, "Kereviz sapı"], [/kereviz/, "Kereviz"], [/brokoli/, "Brokoli"], [/karnabahar/, "Karnabahar"],
+      [/pazı/, "Pazı"], [/ıspanak/, "Ispanak"], [/pırasa/, "Pırasa"], [/semizotu/, "Semizotu"], [/kuşkonmaz/, "Kuşkonmaz"], [/taze fasulye/, "Taze fasulye"],
+      [/yeşilli[kğ]/, "Mevsim / taze yeşillik"], [/biber/, "Yeşil biber"], [/kabak/, "Kabak"]
+    ];
+
+    function parseShopClause(raw) {
+      const t = raw.trim().replace(/^[+\-–\s]+/, "");
+      if (!t) return null;
+      const m = t.match(new RegExp("^(\\d+(?:[.,]\\d+)?(?:/\\d+)?|yarım)\\s*(?:(" + SHOP_UNITS + ")(?=\\s|$))?\\s*(?:\\{(\\d+(?:[.,]\\d+)?)(g|ml)\\}\\s*)?(.*)$", "i"));
+      if (!m) return { qty: 0, unit: "", name: t, hasNum: false };
+      const toNum = (x) => /yarım/i.test(x) ? 0.5 : x.includes("/") ? x.split("/").reduce((a, b) => a / b) : Number(x.replace(",", "."));
+      let qty = toNum(m[1]);
+      let unit = (m[2] || "adet").toLocaleLowerCase("tr-TR");
+      if (m[3] && /^(küçük avuç|avuç|orta boy|küçük kase|kase|su bardağı)$/.test(unit)) { qty = toNum(m[3]); unit = m[4]; }
+      if (unit === "tam adet" || unit === "orta boy") unit = "adet";
+      if (unit === "ince dilim") unit = "dilim";
+      return { qty, unit, name: m[5].trim(), hasNum: true };
+    }
+
+    function aggregateShopping(lines) {
+      const map = new Map();
+      lines.forEach((line) => {
+        const s = String(line).replace(/\s+/g, " ")
+          .replace(/\((\d+(?:[.,]\d+)?)\s*(g|ml)\)/gi, "{$1$2}").replace(/\([^)]*\)/g, " ")
+          .replace(/rendelenmiş ve suyu sıkılmış/g, "rendelenmiş").replace(/zeytinyağlı ve .*? pişmiş (?=semizotu)/g, "")
+          .replace(/zencefil ve limon çayı/g, "zencefil-limon çayı").replace(/\s+veya\s+(?=\d).*$/i, "");
+        const parts = s.split(/\s+ve\s+|\s*\+\s*|,\s+/).map(parseShopClause).filter((p) => p && p.name);
+        parts.forEach((p, i) => {
+          const nx = parts[i + 1];
+          if (p.unit === "g" && p.hasNum && nx && !nx.hasNum) { p.qty /= 2; nx.qty = p.qty; nx.unit = "g"; nx.hasNum = true; }
+        });
+        parts.forEach((p) => {
+          const low = p.name.toLocaleLowerCase("tr-TR").replace(/\s+/g, " ").trim();
+          const hit = SHOP_ITEMS.find(([re]) => re.test(low));
+          const label = hit && hit[1] ? hit[1] : low.charAt(0).toLocaleUpperCase("tr-TR") + low.slice(1);
+          let qty = p.hasNum ? p.qty : 0;
+          let unit = qty ? p.unit : "";
+          if (SPOON_TO_TSP[unit]) { qty *= SPOON_TO_TSP[unit]; unit = "çay"; }
+          const key = label + "|" + unit;
+          const e = map.get(key) || { label, unit, qty: 0 };
+          e.qty += qty;
+          map.set(key, e);
+        });
+      });
+      const fmt = (n) => Number(n.toFixed(1)).toLocaleString("tr-TR");
+      const all = Array.from(map.values());
+      const withQty = new Set(all.filter((e) => e.qty).map((e) => e.label));
+      return all.filter((e) => e.qty || !withQty.has(e.label)).sort((a, b) => a.label.localeCompare(b.label, "tr")).map((e) => {
+        let q = e.qty, u = e.unit;
+        if (u === "çay") { if (q >= 3) { q /= 3; u = "yemek kaşığı"; } else u = "çay kaşığı"; }
+        if (u === "g" && q >= 1000) { q /= 1000; u = "kg"; }
+        if (u === "ml" && q >= 1000) { q /= 1000; u = "l"; }
+        return { key: e.label + "|" + e.unit, label: q ? `${e.label} — ${fmt(q)} ${u}` : e.label, count: 1 };
+      });
     }
 
     // Kişisel Metabolizma ve Porsiyon Çarpanı Hesaplama
@@ -1359,7 +1515,7 @@
       const metrics = calculateProfileMetrics();
       const week = Number(state.shoppingWeek);
       const presetLabel = PROFILE_PRESETS[state.profileType].label;
-      document.getElementById("shoppingListTitle").textContent = `🛒 ${week}. Hafta — Menüden Oluşturulan Alışveriş Listesi (${presetLabel})`;
+      document.getElementById("shoppingListTitle").textContent = `🛒 ${week}. Hafta — Menüden Oluşturulan Alışveriş Listesi (${state.profileName || presetLabel})`;
       const collected = [];
       for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
         const day = buildMealData(week, dayIndex, metrics);
@@ -1370,35 +1526,13 @@
           });
         });
       }
-      const totals = new Map();
-      collected.forEach((line) => {
-        // Miktar ve birimi ayır; yalnızca aynı ürün ve aynı birim birleştirilir.
-        const m = line.match(/^([\d.,]+)\s*(g|kg|ml|l|adet|dilim|yemek kaşığı|tatlı kaşığı|çay kaşığı|su bardağı|kase|avuç|demet|baş|küçük avuç)\s+(.*)$/i);
-        if (m) {
-          const amount = Number(m[1].replace(",", "."));
-          const unit = m[2].toLocaleLowerCase("tr-TR");
-          const item = m[3].replace(/\([^)]*\)/g, "").replace(/\s+/g, " ").trim().toLocaleLowerCase("tr-TR");
-          const key = `${unit}|${item}`;
-          const old = totals.get(key);
-          if (old) old.amount += amount;
-          else totals.set(key, {amount, unit, item, originals: [line]});
-        } else {
-          const key = `line|${line.toLocaleLowerCase("tr-TR")}`;
-          const old = totals.get(key);
-          if (old) old.count += 1;
-          else totals.set(key, {line, count: 1, unit: "", item: "", originals: [line]});
-        }
-      });
-      const entries = Array.from(totals.entries()).map(([key, value]) => {
-        const label = value.line || `${Number(value.amount.toFixed(2)).toLocaleString("tr-TR")} ${value.unit} ${value.item}`;
-        return {key, label, count: value.count || 1};
-      });
+      const entries = aggregateShopping(collected);
       const container = document.getElementById("shoppingCategoriesContainer");
-      container.innerHTML = `<div class="md:col-span-2 lg:col-span-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 mb-1">Liste, seçili haftanın tarif malzemelerinden otomatik oluşturulur. Farklı yazılmış ürün adları veya farklı ölçü birimleri her zaman birleştirilemeyebilir; alışverişten önce miktarları kontrol edin.</div>
+      container.innerHTML = `<div class="md:col-span-2 lg:col-span-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 mb-1">Liste, seçili haftanın tarif malzemelerinden otomatik oluşturulur. Aynı ürünler (örn. tüm yumurtalar) tek satırda toplanır. Farklı ölçü birimleriyle yazılanlar ayrı satırda kalabilir; alışverişten önce miktarları kontrol edin.</div>
         <div class="rounded-xl border border-stone-200 p-4 bg-stone-50/50 md:col-span-2 lg:col-span-3">
           <h3 class="font-bold text-sm text-[#1B4D3E] mb-3">🧺 Tariflerden çıkarılan malzemeler (${entries.length} satır)</h3>
           <ul class="space-y-2 text-xs sm:text-sm text-stone-700">${entries.map((entry, idx) => {
-            const itemKey = `shop_w${week}_${idx}_${entry.key.replace(/[^a-z0-9]/gi, "").slice(0,24)}`;
+            const itemKey = `shop_w${week}_${entry.key.replace(/[^a-z0-9çğıöşü]/gi, "").slice(0,40)}`;
             const checked = Boolean(state.completedHabits[itemKey]);
             return `<li><label class="flex items-start gap-2 cursor-pointer select-none"><input type="checkbox" data-shop-item="${itemKey}" ${checked ? "checked" : ""} class="mt-0.5 rounded text-[#1B4D3E]"><span class="${checked ? "line-through text-stone-400" : ""}">${entry.label}</span></label></li>`;
           }).join("")}</ul>
@@ -1472,7 +1606,7 @@
 
     function renderAll() {
       const profileInputs = { inputAge: state.age, inputHeight: state.height, inputWeight: state.weight, selectActivity: state.activity, selectGoal: state.goal, selectTrimester: state.trimester, selectEggNote: state.sensitivityMode };
-      Object.entries(profileInputs).forEach(([id, value]) => { const el = document.getElementById(id); if (el && value !== undefined) el.value = value; });
+      Object.entries(profileInputs).forEach(([id, value]) => { const el = document.getElementById(id); if (el && value !== undefined && document.activeElement !== el) el.value = value; });
       const goalEl = document.getElementById("selectGoal");
       if (["child", "pregnant", "breastfeeding"].includes(state.profileType)) { const loseOption = goalEl.querySelector('option[value="lose"]'); if (loseOption) loseOption.disabled = true; }
       else { const loseOption = goalEl.querySelector('option[value="lose"]'); if (loseOption) loseOption.disabled = false; }
@@ -1481,6 +1615,7 @@
       renderPortionGuide();
       renderShoppingList();
       renderDailyHabits();
+      renderMembers();
     }
 
     // Geliştirme aşaması otomatik kontrolleri: kullanıcı verisini değiştirmez.
@@ -1506,8 +1641,15 @@
     // =========================================================================
     document.addEventListener("DOMContentLoaded", () => {
       loadSavedState();
+      ensureMembers();
       renderAll();
       runBeslenPlusSelfTests();
+
+      // Aile bireyleri
+      document.getElementById("memberChips").addEventListener("click", (e) => { const b = e.target.closest("[data-member]"); if (b) switchMember(b.getAttribute("data-member")); });
+      document.getElementById("btnAddMember").addEventListener("click", addMember);
+      document.getElementById("btnDeleteMember").addEventListener("click", deleteActiveMember);
+      document.getElementById("inputMemberName").addEventListener("input", (e) => { state.profileName = e.target.value; saveState(); renderMembers(); renderShoppingList(); });
 
       // Hızlı Profil Butonları
       document.getElementById("profileCategoryButtons").addEventListener("click", (e) => {
@@ -1552,12 +1694,21 @@
         allergenInput.addEventListener("input", () => { state.allergens = allergenInput.value; saveState(); renderWeeklyMenu(); });
       }
 
-      // Sayısal ve Seçim Girdileri
-      ["inputAge", "inputHeight", "inputWeight"].forEach((id) => {
-        document.getElementById(id).addEventListener("input", () => {
-          state.age = Math.max(5, Math.min(95, Number(document.getElementById("inputAge").value) || 30));
-          state.height = Math.max(90, Math.min(220, Number(document.getElementById("inputHeight").value) || 165));
-          state.weight = Math.max(15, Math.min(180, Number(document.getElementById("inputWeight").value) || 64));
+      // Sayısal girdiler: yazarken kutuya dokunma, geçerli değeri anında uygula, çıkışta düzelt
+      const NUM_LIMITS = { inputAge: ["age", 5, 95], inputHeight: ["height", 90, 220], inputWeight: ["weight", 15, 180] };
+      Object.entries(NUM_LIMITS).forEach(([id, [key, min, max]]) => {
+        const el = document.getElementById(id);
+        el.setAttribute("step", "any");
+        el.setAttribute("inputmode", "decimal");
+        const read = () => (el.value.trim() === "" ? NaN : Number(String(el.value).replace(",", ".")));
+        el.addEventListener("input", () => {
+          const v = read();
+          if (Number.isFinite(v) && v >= min && v <= max) { state[key] = v; saveState(); renderAll(); }
+        });
+        el.addEventListener("change", () => {
+          const v = read();
+          if (Number.isFinite(v)) state[key] = Math.max(min, Math.min(max, v));
+          el.value = state[key];
           saveState(); renderAll();
         });
       });
